@@ -32,3 +32,10 @@ export type JobForm = {
   salary: string;
   description: string;
 };
+
+export type JobBoardTab = "all" | "remote" | "full-time" | "part-time";
+
+export type JobBoardStat = {
+  value: string;
+  label: string;
+};

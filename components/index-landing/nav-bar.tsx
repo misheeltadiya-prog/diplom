@@ -27,36 +27,42 @@ export function NavBar({
 }: NavBarProps) {
   return (
     <nav className={`${styles.nav} ${scrolled ? styles.navScrolled : ""}`}>
-      <Link className={styles.logo} href="/" aria-label="Нүүр">
+      <Link className={styles.logo} href="/" aria-label="C-Work home">
         <Image alt="C-Work logo" className={styles.logoImage} height={44} src="/c-work-logo.svg" width={44} />
+        <span className={styles.logoBrand}>
+          <span className={styles.logoBrandName}>C-Work</span>
+          <span className={styles.logoBrandSub}>Freelancing Platform</span>
+        </span>
       </Link>
+
       <div className={styles.navRight}>
-        <button
-          className={`${styles.navFavorites} ${favoritesViewActive ? styles.navFavoritesActive : ""}`}
-          onClick={onSavedJobsClick}
-          type="button"
-        >
-          <Image alt="" aria-hidden className={styles.navFavoritesIcon} height={28} src="/heart-favorite.svg" width={28} />
-          <span className={styles.navFavoritesLabel}>Таалагдсан ажлын зарууд</span>
-          {savedJobCount > 0 ? <span className={styles.navFavoritesCount}>{savedJobCount}</span> : null}
-        </button>
         <div className={styles.navLinks}>
-          <button className={styles.navLinkButton} onClick={onFreelancer} type="button">
-            Freelancer
-          </button>
           <button className={styles.navLinkButton} onClick={onFindJob} type="button">
-            Find Job
+            Find Jobs
+          </button>
+          <button className={styles.navLinkButton} onClick={onFreelancer} type="button">
+            Hire Talent
           </button>
           <button className={styles.navLinkButton} onClick={onCompany} type="button">
-            Company
+            Companies
           </button>
           <button className={styles.navLinkButton} onClick={onAbout} type="button">
             About
           </button>
         </div>
+
         <div className={styles.navButtons}>
+          <button
+            className={`${styles.navFavorites} ${favoritesViewActive ? styles.navFavoritesActive : ""}`}
+            onClick={onSavedJobsClick}
+            type="button"
+          >
+            <Image alt="" aria-hidden className={styles.navFavoritesIcon} height={28} src="/heart-favorite.svg" width={28} />
+            <span className={styles.navFavoritesLabel}>Saved Jobs</span>
+            {savedJobCount > 0 ? <span className={styles.navFavoritesCount}>{savedJobCount}</span> : null}
+          </button>
           <button className={styles.navCta} type="button" onClick={onPostJob}>
-            Post job
+            Post Job
           </button>
           <a className={`${styles.navCta} ${styles.navLogin}`} href="/login">
             Нэвтрэх

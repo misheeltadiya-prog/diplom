@@ -1,11 +1,11 @@
 "use client";
 
 import { FormEvent, RefObject, useCallback, useEffect, useMemo, useState } from "react";
+import { companies } from "./companies-directory";
 import { landingCategories, type LandingCategory, type LandingCategoryKey } from "./data";
 import { JobsFilterPanel } from "./jobs-filter-panel";
 import { JobsListCards } from "./jobs-list-cards";
-import { type DisplayJob, type JobForm, type JobRecord } from "./jobs-types";
-import { companies } from "./companies-directory";
+import { type DisplayJob, type JobBoardTab, type JobForm, type JobRecord } from "./jobs-types";
 import styles from "./index-landing.module.css";
 
 type JobsListSectionProps = {
@@ -25,6 +25,12 @@ const categoryMap = new Map(landingCategories.map((category) => [category.key, c
 const allKnownTags = Array.from(new Set(landingCategories.flatMap((category) => category.tags)));
 const JOBS_PER_PAGE = 10;
 
+const jobBoardStats = [
+  { value: "500+", label: "Open Jobs" },
+  { value: "300+", label: "Companies" },
+  { value: "1,200+", label: "Applicants" },
+];
+
 const emptyJobForm: JobForm = {
   title: "",
   companyName: "",
@@ -41,19 +47,31 @@ function normalizeText(value: string) {
 function normalizeEmploymentType(value: string) {
   const normalized = normalizeText(value);
 
-  if (normalized === "remote") {
+  if (normalized.includes("remote")) {
     return "Remote";
   }
 
-  if (normalized === "open") {
+  if (normalized.includes("open")) {
     return "Нээлттэй";
+  }
+
+  if (normalized.includes("бүтэн") || normalized.includes("full")) {
+    return "Бүтэн цаг";
+  }
+
+  if (normalized.includes("хагас") || normalized.includes("цагийн") || normalized.includes("part")) {
+    return "Цагийн ажил";
+  }
+
+  if (normalized.includes("гэрээ") || normalized.includes("contract")) {
+    return "Гэрээт";
   }
 
   return value;
 }
 
 function extractSalaryScore(rawSalary: string) {
-  const normalized = rawSalary.toLowerCase();
+  const normalized = normalizeText(rawSalary);
   const numbers = rawSalary.match(/[\d.,]+/g)?.map((value) => Number(value.replace(/,/g, ""))) ?? [];
 
   if (numbers.length === 0) {
@@ -129,14 +147,70 @@ function buildSearchableText(job: JobRecord, category: LandingCategory, tags: st
 
 function matchesSearch(job: DisplayJob, query: string) {
   const normalized = normalizeText(query);
-
   if (!normalized) {
     return true;
   }
 
-  const tokens = normalized.split(" ").filter(Boolean);
+  return normalized
+    .split(" ")
+    .filter(Boolean)
+    .every((token) => job.searchableText.includes(token));
+}
 
-  return tokens.every((token) => job.searchableText.includes(token));
+function isRemoteJob(job: DisplayJob) {
+  return normalizeText(`${job.location} ${job.employmentType}`).includes("remote");
+}
+
+function isFullTimeJob(job: DisplayJob) {
+  const text = normalizeText(job.employmentType);
+  return text.includes("бүтэн") || text.includes("full");
+}
+
+function isPartTimeJob(job: DisplayJob) {
+  const text = normalizeText(job.employmentType);
+  return text.includes("цагийн") || text.includes("part") || text.includes("хагас");
+}
+
+function matchesJobBoardTab(job: DisplayJob, tab: JobBoardTab) {
+  if (tab === "remote") {
+    return isRemoteJob(job);
+  }
+
+  if (tab === "full-time") {
+    return isFullTimeJob(job);
+  }
+
+  if (tab === "part-time") {
+    return isPartTimeJob(job);
+  }
+
+  return true;
+}
+
+function matchesJobTypeFilters(job: DisplayJob, filters: string[]) {
+  if (filters.length === 0) {
+    return true;
+  }
+
+  return filters.some((filter) => {
+    if (filter === "full-time") {
+      return isFullTimeJob(job);
+    }
+
+    if (filter === "part-time") {
+      return isPartTimeJob(job);
+    }
+
+    if (filter === "remote") {
+      return isRemoteJob(job);
+    }
+
+    if (filter === "internship") {
+      return normalizeText(`${job.title} ${job.description} ${job.employmentType}`).includes("дадлага");
+    }
+
+    return true;
+  });
 }
 
 function buildApplicantCount(
@@ -167,9 +241,9 @@ function buildCompanySeedJobs(now: number): JobRecord[] {
       title: `${company.industry} Specialist`,
       companyName: company.name,
       location: company.city,
-      employmentType: "Remote",
+      employmentType: index % 3 === 0 ? "Remote" : "Бүтэн цаг",
       salary: `${(2.4 + (index % 6) * 0.25).toFixed(1)} сая ₮`,
-      description: `${company.name}-д нээлттэй боломж. ${company.industry} чиглэлээр ажиллах, багтайгаа хурдан уялдах, чанартай үр дүн гаргах хүнийг хайж байна.`,
+      description: `${company.name}-д нээлттэй боломж байна. ${company.industry} чиглэлээр ажиллах, багтайгаа хурдан уялдах, чанартай үр дүн гаргах хүнийг хайж байна.`,
       createdAt,
       createdByName: null,
     };
@@ -198,11 +272,12 @@ export function JobsListSection({
   const [debouncedFilterKeyword, setDebouncedFilterKeyword] = useState("");
   const [manualSalaryInput, setManualSalaryInput] = useState("");
   const [minSalaryFilter, setMinSalaryFilter] = useState(0);
-  const [maxSalaryFilter, setMaxSalaryFilter] = useState(10_000_000);
+  const [maxSalaryFilter] = useState(10_000_000);
   const [selectedSector, setSelectedSector] = useState<string | "all">("all");
-  const [selectedSchedule, setSelectedSchedule] = useState<DisplayJob["employmentType"] | "all">("all");
-  const [accessibleOnly, setAccessibleOnly] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<string | "all">("all");
+  const [jobTypeFilters, setJobTypeFilters] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeTab, setActiveTab] = useState<JobBoardTab>("all");
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -235,9 +310,7 @@ export function JobsListSection({
       setDebouncedFilterKeyword(filterKeyword);
     }, 250);
 
-    return () => {
-      window.clearTimeout(timer);
-    };
+    return () => window.clearTimeout(timer);
   }, [filterKeyword]);
 
   const combinedJobs = useMemo<DisplayJob[]>(() => {
@@ -251,7 +324,7 @@ export function JobsListSection({
           ? "Junior"
           : "Mid";
       const employmentType = normalizeEmploymentType(job.employmentType);
-      const highlight = `${category.name} ангилалд автоматаар ангилсан live database ажлын санал`;
+      const highlight = `${category.name} ангиллын live database ажлын санал`;
 
       return {
         ...job,
@@ -274,7 +347,7 @@ export function JobsListSection({
       const tags = extractTags(job, category.tags);
       const level = "Mid";
       const employmentType = normalizeEmploymentType(job.employmentType);
-      const highlight = `${category.name} ангилалд зориулсан компанийн demo ажлын санал`;
+      const highlight = `${category.name} ангиллын demo ажлын санал`;
 
       return {
         ...job,
@@ -293,14 +366,10 @@ export function JobsListSection({
 
     return [...databaseJobs, ...seedJobs]
       .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
-      .map((job, index) => {
-        const company = companies[index % companies.length];
-        return {
-          ...job,
-          companyName: company.name,
+      .map((job, index) => ({
+        ...job,
         applicantCount: buildApplicantCount(job, index),
-        };
-      });
+      }));
   }, [jobs]);
 
   const parsedManualSalary = useMemo(() => parseManualSalaryInput(manualSalaryInput), [manualSalaryInput]);
@@ -312,16 +381,17 @@ export function JobsListSection({
         const matchesCategory = selectedCategory === "all" || job.categoryKey === selectedCategory;
         const matchesHeaderSearch = matchesSearch(job, searchValue);
         const matchesFilterKeyword = matchesSearch(job, debouncedFilterKeyword);
-        const matchesLocation = !normalizeText(job.location).includes("remote");
+        const remote = isRemoteJob(job);
+        const matchesLocation =
+          selectedLocation === "all" ||
+          normalizeText(job.location).includes(normalizeText(selectedLocation)) ||
+          (selectedLocation === "remote" && remote);
         const matchesSalary = job.salaryScore >= minSalaryFilter && job.salaryScore <= maxSalaryFilter;
         const matchesManualSalary = parsedManualSalary === null || job.salaryScore >= parsedManualSalary;
         const matchesSector =
           selectedSector === "all" ||
           job.categoryKey === selectedSector ||
           job.searchableText.includes(normalizeText(selectedSector));
-        const matchesSchedule = selectedSchedule === "all" || job.employmentType === selectedSchedule;
-        const matchesAccessibility =
-          !accessibleOnly || normalizeText(`${job.title} ${job.description}`).includes("нээлттэй");
 
         return (
           matchesSaved &&
@@ -332,24 +402,35 @@ export function JobsListSection({
           matchesSalary &&
           matchesManualSalary &&
           matchesSector &&
-          matchesSchedule &&
-          matchesAccessibility
+          matchesJobTypeFilters(job, jobTypeFilters) &&
+          matchesJobBoardTab(job, activeTab)
         );
       }),
     [
-      accessibleOnly,
-      favoriteJobIds,
+      activeTab,
       combinedJobs,
-      favoritesOnly,
       debouncedFilterKeyword,
-      parsedManualSalary,
+      favoriteJobIds,
+      favoritesOnly,
+      jobTypeFilters,
       maxSalaryFilter,
       minSalaryFilter,
+      parsedManualSalary,
       searchValue,
       selectedCategory,
-      selectedSchedule,
+      selectedLocation,
       selectedSector,
     ],
+  );
+
+  const tabCounts = useMemo(
+    () => ({
+      all: combinedJobs.length,
+      remote: combinedJobs.filter((job) => isRemoteJob(job)).length,
+      "full-time": combinedJobs.filter((job) => isFullTimeJob(job)).length,
+      "part-time": combinedJobs.filter((job) => isPartTimeJob(job)).length,
+    }),
+    [combinedJobs],
   );
 
   useEffect(() => {
@@ -359,15 +440,15 @@ export function JobsListSection({
   useEffect(() => {
     setCurrentPage(1);
   }, [
+    activeTab,
     searchValue,
     selectedCategory,
     favoritesOnly,
     filterKeyword,
     minSalaryFilter,
-    maxSalaryFilter,
     selectedSector,
-    selectedSchedule,
-    accessibleOnly,
+    selectedLocation,
+    jobTypeFilters,
   ]);
 
   const totalPages = Math.max(1, Math.ceil(filteredJobs.length / JOBS_PER_PAGE));
@@ -444,10 +525,10 @@ export function JobsListSection({
     setFilterKeyword("");
     setManualSalaryInput("");
     setMinSalaryFilter(0);
-    setMaxSalaryFilter(10_000_000);
     setSelectedSector("all");
-    setSelectedSchedule("all");
-    setAccessibleOnly(false);
+    setSelectedLocation("all");
+    setJobTypeFilters([]);
+    setActiveTab("all");
   }
 
   return (
@@ -501,7 +582,7 @@ export function JobsListSection({
               value={newJob.employmentType}
             >
               <option>Бүтэн цаг</option>
-              <option>Хагас цаг</option>
+              <option>Цагийн ажил</option>
               <option>Гэрээт</option>
               <option>Remote</option>
             </select>
@@ -520,40 +601,68 @@ export function JobsListSection({
         </form>
       ) : null}
 
+      <section className={styles.cleanJobsHero}>
+        <div className={styles.cleanJobsHeroCopy}>
+          <h2>
+            Илүү сайн <span>ажил.</span> Илүү хурдан.
+          </h2>
+          <p>Монголын хамгийн хурдан өсч буй hiring platform - топ компаниуд, бодит боломжууд.</p>
+          <div className={styles.cleanJobsHeroActions}>
+            <a className={styles.cleanJobsHeroPrimary} href="#jobs-content">
+              Ажил хайх
+            </a>
+            <a className={styles.cleanJobsHeroSecondary} href="/register">
+              CV нэмэх
+            </a>
+          </div>
+          <div className={styles.cleanJobsHeroTrust}>300+ компани • 500+ нээлттэй ажлын байр</div>
+        </div>
+
+        <div className={styles.cleanJobsStatsGrid}>
+          {jobBoardStats.map((stat) => (
+            <div className={styles.cleanJobsStatCard} key={stat.label}>
+              <strong>{stat.value}</strong>
+              <small>{stat.label}</small>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <div className={styles.jobsContent} id="jobs-content">
         <JobsFilterPanel
-          accessibleOnly={accessibleOnly}
           filterKeyword={filterKeyword}
-          maxSalaryFilter={maxSalaryFilter}
+          jobTypeFilters={jobTypeFilters}
           manualSalaryInput={manualSalaryInput}
           minSalaryFilter={minSalaryFilter}
-          onAccessibleOnlyChange={setAccessibleOnly}
           onFilterKeywordChange={setFilterKeyword}
+          onJobTypeFiltersChange={setJobTypeFilters}
           onManualSalaryInputChange={setManualSalaryInput}
           onMinSalaryFilterChange={setMinSalaryFilter}
           onReset={resetFilters}
-          onSelectedScheduleChange={setSelectedSchedule}
+          onSelectedLocationChange={setSelectedLocation}
           onSelectedSectorChange={setSelectedSector}
-          selectedSchedule={selectedSchedule}
+          selectedLocation={selectedLocation}
           selectedSector={selectedSector}
         />
 
         <JobsListCards
+          activeTab={activeTab}
           editJob={editJob}
           editingId={editingId}
           favoriteJobIds={favoriteJobIds}
           filteredJobs={filteredJobs}
+          jobBoardStats={jobBoardStats}
           paginatedJobs={paginatedJobs}
           currentPage={currentPage}
+          tabCounts={tabCounts}
           totalPages={totalPages}
           loading={loading}
-          onApplyClick={(job) =>
-            onToast(`${job.title} дээр CV илгээх урсгалыг дараагийн алхмаар холбоно.`)
-          }
+          onApplyClick={(job) => onToast(`${job.title} дээр дэлгэрэнгүй урсгалыг дараагийн алхмаар холбоно.`)}
           onCancelEdit={cancelEdit}
           onEditFieldChange={setEditJob}
           onPageChange={setCurrentPage}
           onSaveEdit={saveEdit}
+          onTabChange={setActiveTab}
           submitting={submitting}
           onToggleFavorite={onToggleFavorite}
         />

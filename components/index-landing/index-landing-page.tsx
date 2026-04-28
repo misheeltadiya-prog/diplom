@@ -6,7 +6,6 @@ import { landingCategories, type LandingCategoryKey } from "./data";
 import { JobsListSection } from "./jobs-list-section";
 import { LeadModal } from "./lead-modal";
 import { NavBar } from "./nav-bar";
-import { SearchSection } from "./search-section";
 import { SiteFooter } from "./site-footer";
 import { Toast } from "./toast";
 import styles from "./index-landing.module.css";
@@ -19,7 +18,9 @@ export function IndexLandingPage() {
   const [submitted, setSubmitted] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<LandingCategoryKey | "all">("all");
+  const [selectedCategory, setSelectedCategory] = useState<
+    LandingCategoryKey | "all"
+  >("all");
   const [showPostJobComposer, setShowPostJobComposer] = useState(false);
   const [visibleJobsCount, setVisibleJobsCount] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -40,7 +41,9 @@ export function IndexLandingPage() {
     const hash = window.location.hash;
     if (hash === "#jobs-content" || hash === "#jobs") {
       const id = window.setTimeout(() => {
-        const el = document.getElementById("jobs-content") ?? document.getElementById("jobs");
+        const el =
+          document.getElementById("jobs-content") ??
+          document.getElementById("jobs");
         el?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 80);
       return () => window.clearTimeout(id);
@@ -66,7 +69,10 @@ export function IndexLandingPage() {
         return;
       }
       const parsed = JSON.parse(raw) as unknown;
-      if (Array.isArray(parsed) && parsed.every((id) => typeof id === "string")) {
+      if (
+        Array.isArray(parsed) &&
+        parsed.every((id) => typeof id === "string")
+      ) {
         setFavoriteJobIds(parsed);
       }
     } catch {
@@ -76,20 +82,27 @@ export function IndexLandingPage() {
 
   useEffect(() => {
     try {
-      localStorage.setItem(FAVORITE_JOBS_STORAGE_KEY, JSON.stringify(favoriteJobIds));
+      localStorage.setItem(
+        FAVORITE_JOBS_STORAGE_KEY,
+        JSON.stringify(favoriteJobIds),
+      );
     } catch {
       // ignore
     }
   }, [favoriteJobIds]);
 
   function toggleFavoriteJob(id: string) {
-    setFavoriteJobIds((prev) => (prev.includes(id) ? prev.filter((jobId) => jobId !== id) : [...prev, id]));
+    setFavoriteJobIds((prev) =>
+      prev.includes(id) ? prev.filter((jobId) => jobId !== id) : [...prev, id],
+    );
   }
 
   function handleSavedJobsNav() {
     setFavoritesOnly((open) => !open);
     window.requestAnimationFrame(() => {
-      document.getElementById("jobs-content")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document
+        .getElementById("jobs-content")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }
 
@@ -111,7 +124,10 @@ export function IndexLandingPage() {
         return;
       }
       const height = Math.round(nav.getBoundingClientRect().height);
-      document.documentElement.style.setProperty("--jobs-filter-sticky-top", `${height + OFFSET_GAP_PX}px`);
+      document.documentElement.style.setProperty(
+        "--jobs-filter-sticky-top",
+        `${height + OFFSET_GAP_PX}px`,
+      );
     };
 
     syncFilterStickyTop();
@@ -156,7 +172,10 @@ export function IndexLandingPage() {
       return;
     }
 
-    jobsComposerRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    jobsComposerRef.current.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   }, [showPostJobComposer]);
 
   function showToast(message: string) {
@@ -167,7 +186,9 @@ export function IndexLandingPage() {
     const selectedCategoryLabel =
       selectedCategory === "all"
         ? "бүх ангилал"
-        : landingCategories.find((category) => category.key === selectedCategory)?.name ?? "сонгосон ангилал";
+        : (landingCategories.find(
+            (category) => category.key === selectedCategory,
+          )?.name ?? "сонгосон ангилал");
 
     if (!searchValue.trim() && selectedCategory === "all") {
       showToast(`${visibleJobsCount} ажлын санал одоогоор харагдаж байна.`);
@@ -184,13 +205,17 @@ export function IndexLandingPage() {
       <NavBar
         favoritesViewActive={favoritesOnly}
         onAbout={() => {
-          document.getElementById("contact")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          document
+            .getElementById("contact")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
         }}
         onCompany={() => {
           router.push("/companies");
         }}
         onFindJob={() => {
-          document.getElementById("jobs-content")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          document
+            .getElementById("jobs-content")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
         }}
         onFreelancer={() => {
           router.push("/freelancers");
@@ -202,14 +227,7 @@ export function IndexLandingPage() {
         savedJobCount={favoriteJobIds.length}
         scrolled={isScrolled}
       />
-      <SearchSection
-        onCategoryChange={setSelectedCategory}
-        onChange={setSearchValue}
-        onSearch={runSearchToast}
-        searchValue={searchValue}
-        selectedCategory={selectedCategory}
 
-      />
       <JobsListSection
         composerRef={jobsComposerRef}
         favoriteJobIds={favoriteJobIds}
@@ -223,7 +241,12 @@ export function IndexLandingPage() {
         showComposer={showPostJobComposer}
       />
       <SiteFooter />
-      <LeadModal mode={modalMode} submitted={submitted} onClose={closeModal} onSubmit={submitModal} />
+      <LeadModal
+        mode={modalMode}
+        submitted={submitted}
+        onClose={closeModal}
+        onSubmit={submitModal}
+      />
       <Toast message={toastMessage} />
     </div>
   );
