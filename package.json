@@ -1,0 +1,25 @@
+{
+  "name": "zeel-next-app",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:bootstrap": "node scripts/bootstrap-db.mjs"
+  },
+  "dependencies": {
+    "mysql2": "latest",
+    "next": "latest",
+    "ogl": "^1.0.11",
+    "react": "latest",
+    "react-dom": "latest",
+    "three": "^0.184.0"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "typescript": "latest"
+  }
+}

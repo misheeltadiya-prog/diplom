@@ -1,0 +1,533 @@
+-- ① database/schema.sql дараа нь энэ файлыг ажиллуул.
+-- ② Давтвал: TRUNCATE TABLE job_seeker_profiles; дараа нь дахин INSERT.
+-- job_seeker: /freelancers, GET /api/job-seekers
+USE zeel_platform;
+
+TRUNCATE TABLE job_seeker_profiles;
+
+INSERT INTO job_seeker_profiles
+  (initials, full_name, role_title, short_description, detail_description, skills_json, price_label, stars_label, rating, reviews_count, accent, badge_label, badge_tone, sort_order)
+VALUES
+  (
+    'Т',
+    'Төмөрсүх Баатар',
+    'Ахлах full-stack вэб хөгжүүлэгч',
+    'Next.js, PostgreSQL, Docker. Үйлдвэрийн вэб, REST API.',
+    '7 жил. WMS/CRM интеграци, CI/CD, тех. баримт, сургалт.',
+    '["Next.js","TypeScript","Node.js","Docker","PostgreSQL"]',
+    '₮95 000',
+    '★★★★★',
+    '4.9',
+    '38',
+    'lime',
+    'Баталгаатай',
+    'top',
+    1
+  ),
+  (
+    'Э',
+    'Энхжин Сүхбаатар',
+    'B2B UI/UX дизайнер',
+    'Figma, design system, B2B dashboard.',
+    '4 жил B2B. Handoff, Storybook, accessibility.',
+    '["Figma","Design system","B2B UX","Prototype"]',
+    '₮72 000',
+    '★★★★★',
+    '4.8',
+    '22',
+    'mint',
+    'Сүүлд бүртгэлтэй',
+    'new',
+    2
+  ),
+  (
+    'А',
+    'Амарболд Энх-Оргил',
+    'Flutter мобайл хөгжүүлэгч',
+    'Firebase, store release, offline кэш.',
+    '5 жил. FCM, Auth, iOS+Android нэг кодоор.',
+    '["Flutter","Firebase","REST","Hive"]',
+    '₮108 000',
+    '★★★★★',
+    '4.9',
+    '17',
+    'pink',
+    'Удаан хугацааны',
+    'hot',
+    3
+  ),
+  (
+    'Б',
+    'Болормаа Дашравдан',
+    'Copywriter / контент',
+    'SEO, Монгол+Англи landing, case study.',
+    '3 жил e-com, боловсролын портал дээр ажилласан.',
+    '["Copywriting","SEO","Email"]',
+    '₮45 000',
+    '★★★★☆',
+    '4.7',
+    '54',
+    'gold',
+    NULL,
+    NULL,
+    4
+  ),
+  (
+    'М',
+    'Мөнхтөр Ганбаатар',
+    'Өгөгдлийн шинжилгээ',
+    'SQL, Power BI, KPI тайлан.',
+    '6+ жил санхүү, ложистикийн өгөгдөл.',
+    '["SQL","Power BI","Python","ETL"]',
+    '₮80 000',
+    '★★★★★',
+    '4.8',
+    '11',
+    'lime',
+    'Өргөдлийн',
+    'top',
+    5
+  ),
+  (
+    'С',
+    'Сүхбаатар Нямдаваа',
+    'Корпоратив график',
+    'Print + вэб, event баннер, каталог.',
+    'Illustrator, prepress, брэнд гарын авлага.',
+    '["Illustrator","Photoshop","Figma"]',
+    '₮60 000',
+    '★★★★★',
+    '4.6',
+    '29',
+    'mint',
+    NULL,
+    NULL,
+    6
+  ),
+  (
+    'Г',
+    'Ганзориг Төмөр',
+    'Backend (Node.js)',
+    'Microservices, PostgreSQL, Redis queue.',
+    '5 жил fintech, өндөр ачааллын API.',
+    '["Node.js","PostgreSQL","Redis","REST"]',
+    '₮88 000',
+    '★★★★★',
+    '4.8',
+    '19',
+    'pink',
+    NULL,
+    NULL,
+    7
+  ),
+  (
+    'О',
+    'Оюундарь Баттөмөр',
+    'Frontend (React)',
+    'Design system, Storybook, a11y.',
+    '4 жил product team, TypeScript бүтэн.',
+    '["React","TypeScript","Vite","a11y"]',
+    '₮78 000',
+    '★★★★★',
+    '4.7',
+    '25',
+    'gold',
+    'Шинэ',
+    'new',
+    8
+  ),
+  (
+    'Д',
+    'Доржпүрэв Сүрэн',
+    'DevOps / SRE',
+    'AWS, CI/CD, алдаа дагалдах.',
+    'Terraform, entry K8s, on-call дүрэм.',
+    '["AWS","Docker","GitHub Actions"]',
+    '₮92 000',
+    '★★★★★',
+    '4.9',
+    '14',
+    'lime',
+    NULL,
+    NULL,
+    9
+  ),
+  (
+    'Н',
+    'Нарантуяа Сэдбал',
+    'Product / UX researcher',
+    'User interview, journey map.',
+    'SaaS onboarding урсгалыг сайжруулсан.',
+    '["UX research","Figma","Analytics"]',
+    '₮68 000',
+    '★★★★★',
+    '4.6',
+    '8',
+    'mint',
+    NULL,
+    NULL,
+    10
+  ),
+  (
+    'Б',
+    'Батмөнх Энхболд',
+    'Java / Spring',
+    'REST, JPA, банкны домэйн.',
+    'Микросервис, нууцлалын шаардлага мэднэ.',
+    '["Java","Spring","PostgreSQL","REST"]',
+    '₮90 000',
+    '★★★★☆',
+    '4.8',
+    '21',
+    'pink',
+    NULL,
+    NULL,
+    11
+  ),
+  (
+    'Ц',
+    'Цэцэгмаа Батсайхан',
+    'SMM менежер',
+    'Meta, TikTok, контент төлөвлөгөө.',
+    '2 жил B2C брэнд, A/B нээлттэй ажилласан.',
+    '["Meta Ads","Canva","GA4","TikTok"]',
+    '₮48 000',
+    '★★★★★',
+    '4.5',
+    '33',
+    'gold',
+    NULL,
+    NULL,
+    12
+  ),
+  (
+    'Э',
+    'Эрдэнэбат Болд',
+    'QA automation',
+    'Cypress, Playwright, API test.',
+    'CI-д холбосон, regression багц.',
+    '["Cypress","TypeScript","Jest","API test"]',
+    '₮62 000',
+    '★★★★★',
+    '4.7',
+    '16',
+    'lime',
+    NULL,
+    NULL,
+    13
+  ),
+  (
+    'П',
+    'Пүрэв Очир',
+    'PHP / Laravel',
+    'Admin panel, төлбөрийн hook.',
+    '6 жил жижиг дунд үйлдвэрийн вэб.',
+    '["Laravel","MySQL","REST","Blade"]',
+    '₮55 000',
+    '★★★★★',
+    '4.4',
+    '41',
+    'mint',
+    NULL,
+    NULL,
+    14
+  ),
+  (
+    'У',
+    'Уянга Сайнбаяр',
+    'Motion / After Effects',
+    'Logo animation, explainer short.',
+    '2D, storyboard, дууг зохицуулалт.',
+    '["After Effects","Premiere","Figma"]',
+    '₮70 000',
+    '★★★★★',
+    '4.8',
+    '9',
+    'pink',
+    NULL,
+    NULL,
+    15
+  ),
+  (
+    'Н',
+    'Нэргүй Золбоо',
+    'Өгөгдлийн инженер',
+    'ETL, Airflow, dbt орооцол.',
+    'Data warehouse, чанарын шалгалт.',
+    '["Python","SQL","dbt","Airflow"]',
+    '₮85 000',
+    '★★★★★',
+    '4.7',
+    '12',
+    'gold',
+    NULL,
+    NULL,
+    16
+  ),
+  (
+    'М',
+    'Мөнхбаяр Амар',
+    'Техникийн бичигч',
+    'API docs, user guide, Notion.',
+    'B2B бүтээгдэхүүний баримт бичиг.',
+    '["Notion","Markdown","OpenAPI"]',
+    '₮42 000',
+    '★★★★★',
+    '4.6',
+    '7',
+    'lime',
+    NULL,
+    NULL,
+    17
+  ),
+  (
+    'С',
+    'Сүхбаатар Ганзориг',
+    'Unity / 2D тоглоом',
+    'C#, mobile build, ads SDK.',
+    'Casual game прототойп, store жагсаалт.',
+    '["Unity","C#","Firebase"]',
+    '₮75 000',
+    '★★★★☆',
+    '4.3',
+    '6',
+    'mint',
+    NULL,
+    NULL,
+    18
+  ),
+  (
+    'Х',
+    'Хулан Болормаа',
+    'Санхүүгийн шинжилгээ',
+    'Excel, Power BI, мөнгөний модель.',
+    'Стартап runway, нэг нэгжийн эдийн засаг.',
+    '["Excel","Power BI","SQL"]',
+    '₮58 000',
+    '★★★★★',
+    '4.8',
+    '18',
+    'pink',
+    NULL,
+    NULL,
+    19
+  ),
+  (
+    'Б',
+    'Баттөр Мөнх',
+    'E-commerce (Shopify)',
+    'Theme, хөрвөх чадвар, app суулгах.',
+    'D2C брэнд 3 жил шууд ажилласан.',
+    '["Shopify","Liquid","Meta"]',
+    '₮65 000',
+    '★★★★★',
+    '4.5',
+    '27',
+    'gold',
+    NULL,
+    NULL,
+    20
+  ),
+  (
+    'О',
+    'Оюунчимэг Бат-Эрдэнэ',
+    'Illustration',
+    'Character, хүүхдийн номны хэв маяг.',
+    'Digital + print бэлэн файл өгнө.',
+    '["Procreate","Illustrator","Photoshop"]',
+    '₮52 000',
+    '★★★★★',
+    '4.9',
+    '31',
+    'lime',
+    NULL,
+    NULL,
+    21
+  ),
+  (
+    'Т',
+    'Тэмүүлэн Содном',
+    'Cloud / Kubernetes',
+    'EKS, Helm, service mesh танилцуулга.',
+    'Шилжилтийн төлөвлөгөө, зардлын дүн шинжилгээ.',
+    '["Kubernetes","Helm","AWS","Docker"]',
+    '₮98 000',
+    '★★★★★',
+    '4.8',
+    '10',
+    'mint',
+    'Эрэлттэй',
+    'hot',
+    22
+  ),
+  (
+    'Р',
+    'Рэгжигмаа Батсүх',
+    'Брэнд стратеги',
+    'Positioning, мессежийн workshop.',
+    'SME rebrand 5+ төсөлд оролцсон.',
+    '["Branding","Workshop","Copy"]',
+    '₮72 000',
+    '★★★★★',
+    '4.6',
+    '5',
+    'pink',
+    NULL,
+    NULL,
+    23
+  ),
+  (
+    'Ч',
+    'Чулуунбат Дорж',
+    'Сүлжээ / IT дэмжлэг',
+    'Cisco, VPN, Wi-Fi site survey.',
+    '30+ сүлжээний цэг тохируулсан туршлага.',
+    '["Networking","FortiGate","AD","Wi-Fi"]',
+    '₮68 000',
+    '★★★★★',
+    '4.7',
+    '22',
+    'gold',
+    NULL,
+    NULL,
+    24
+  ),
+  (
+    'Э',
+    'Энхтуяа Саран',
+    'Видео монтаж',
+    'DaVinci, өнгө, ярилцлага тасралтгүй.',
+    'YouTube, event highlight реэл.',
+    '["DaVinci","Premiere","Audio"]',
+    '₮50 000',
+    '★★★★☆',
+    '4.5',
+    '44',
+    'lime',
+    NULL,
+    NULL,
+    25
+  ),
+  (
+    'Р',
+    'Ринчин Бат-Оргил',
+    'Backend (Rust)',
+    'Actix, performance tuning.',
+    'Өндөр QPS API туршлага (сайн дурын).',
+    '["Rust","PostgreSQL","gRPC"]',
+    '₮102 000',
+    '★★★★★',
+    '4.9',
+    '4',
+    'mint',
+    'Шинэ',
+    'new',
+    26
+  ),
+  (
+    'С',
+    'Сайнбаяр Тогтох',
+    'Customer success',
+    'Onboarding, health score, NPS.',
+    'B2B SaaS 2 жил ахлах төлөөлөгч.',
+    '["Intercom","HubSpot","SQL"]',
+    '₮55 000',
+    '★★★★★',
+    '4.4',
+    '15',
+    'pink',
+    NULL,
+    NULL,
+    27
+  ),
+  (
+    'Д',
+    'Долгорсүрэн Мөнх',
+    '1C / бүртгэл',
+    'Санхүүгийн тоо, НӨАТ, тайлан.',
+    'Жижиг бизнес 4 жил дэмжсэн.',
+    '["1C","Excel","Тайлан","НӨАТ"]',
+    '₮48 000',
+    '★★★★★',
+    '4.3',
+    '52',
+    'gold',
+    NULL,
+    NULL,
+    28
+  ),
+  (
+    'А',
+    'Анхбаяр Мөнхбаатар',
+    'GIS / map data',
+    'QGIS, PostGIS, tile server.',
+    'Улаанбаатарын төсөлд оролцож байсан.',
+    '["PostGIS","QGIS","MapLibre"]',
+    '₮84 000',
+    '★★★★★',
+    '4.6',
+    '6',
+    'lime',
+    NULL,
+    NULL,
+    29
+  ),
+  (
+    'Н',
+    'Номин-Эрдэнэ Сүх',
+    'API интеграц (Make/Zapier)',
+    'CRM, Google Sheet, webhook.',
+    'No-code + жижиг custom script нийлүүлэх.',
+    '["Make.com","Zapier","JavaScript","REST"]',
+    '₮58 000',
+    '★★★★★',
+    '4.5',
+    '19',
+    'mint',
+    NULL,
+    NULL,
+    30
+  );
+
+
+-- Dashboard: demo@zeel.local / demo12345
+INSERT INTO users (full_name, phone, email, password_hash)
+SELECT
+  'Бат-Эрдэнэ Оюунболд',
+  '99981234',
+  'demo@zeel.local',
+  'cfdefc50cf7ae76ae968a6f78b8e8051:ef6355d301fef7f29e30c39616a4e9c3c7ac3541ad961efe356ffd707549dbb4a49096773cc7e202c07b6710d9c81f728278b7b63fb36b307d51bcaba22cccbf'
+WHERE NOT EXISTS (SELECT 1 FROM users u WHERE u.email = 'demo@zeel.local');
+
+INSERT INTO employees (created_by, full_name, role_title, email, phone, skills, bio)
+SELECT
+  u.id, 'Гансүх Мөнх-Эрдэнэ', 'Санхүү, төлбөрийн албаны ахлах',
+  'sanz.gansukh@erp.internal', '77112233', 'Excel, 1C, Q4 тайлан, НӨАТ',
+  '4 жилийн дотоод нягтлал, касс банк нэгтгэлт.'
+FROM users u
+WHERE u.email = 'demo@zeel.local' AND NOT EXISTS (SELECT 1 FROM employees e WHERE e.email = 'sanz.gansukh@erp.internal')
+LIMIT 1;
+
+INSERT INTO employees (created_by, full_name, role_title, email, phone, skills, bio)
+SELECT
+  u.id, 'Одбаяр Чимэд-Од', 'HR, ажлын зар', 'hr.odb@erp.internal', '99887766',
+  'iCMS, Word гэрээ', 'Өргөдлийн 2-р шат, ажлын тодорхойлолт.'
+FROM users u
+WHERE u.email = 'demo@zeel.local' AND NOT EXISTS (SELECT 1 FROM employees e WHERE e.email = 'hr.odb@erp.internal')
+LIMIT 1;
+
+INSERT INTO employees (created_by, full_name, role_title, email, phone, skills, bio)
+SELECT
+  u.id, 'Туяа Рэгжигмаа', 'Сошиал кампанит ажил', 'marketing.tuya@erp.internal', '88009911',
+  'Meta, GA4, Canva', '6 сарын контентан календарь.'
+FROM users u
+WHERE u.email = 'demo@zeel.local' AND NOT EXISTS (SELECT 1 FROM employees e WHERE e.email = 'marketing.tuya@erp.internal')
+LIMIT 1;
+
+INSERT INTO employees (created_by, full_name, role_title, email, phone, skills, bio)
+SELECT
+  u.id, 'Алтахүү Бат-Оргил', 'IT дэмжлэг', 'it.alta@erp.internal', '91119900',
+  'Jira, AD, VPN', 'Ticket эхнээс төгсгөл хүртэл дагаж засварлана.'
+FROM users u
+WHERE u.email = 'demo@zeel.local' AND NOT EXISTS (SELECT 1 FROM employees e WHERE e.email = 'it.alta@erp.internal')
+LIMIT 1;
