@@ -1,144 +1,226 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { landingCategories } from "./data";
+import { type DisplayJob } from "./jobs-types";
 import styles from "./index-landing.module.css";
 
-const EXTRA_CATEGORY_OPTIONS = ["Marketing PR", "Technology", "Design", "Sales", "Finance", "Content", "Operations"];
-
-const LOCATION_OPTIONS = [
-  { value: "all", label: "Бүх байршил" },
-  { value: "remote", label: "Remote" },
-  { value: "Улаанбаатар", label: "Улаанбаатар" },
-  { value: "Darkhan", label: "Darkhan" },
-  { value: "Erdenet", label: "Erdenet" },
+const EXTRA_CATEGORY_OPTIONS = [
+  "Автомашин, авто засвар үйлчилгээ",
+  "Аялал жуулчлал, зочид буудал",
+  "Банк, санхүү, нягтлан бодох бүртгэл",
+  "Барилга, үл хөдлөх хөрөнгө",
+  "Биеийн тамир, спорт, гоо сайхан",
+  "Боловсрол, шинжлэх ухаан",
+  "Даатгал",
+  "Захиргаа, хүний нөөц",
+  "Маркетинг PR, менежмент",
+  "Мэдээллийн технологи, программ хангамж",
+  "Ресторан, хоол үйлдвэрлэл",
+  "Соёл урлаг, энтертайнмент",
+  "Төрийн болон төрийн бус байгууллага, ОУБ",
+  "Тээвэр логистик, авто зам, агуулах",
+  "Уул уурхай",
+  "Үйлдвэрлэл, инженерчлэл",
+  "Харилцаа холбоо, шуудан",
+  "Хөдөө аж ахуй, байгаль орчин",
+  "Худалдаа, борлуулалт",
+  "Хууль хүчний байгууллага, харуул хамгаалалт",
+  "Хууль, эрх зүй",
+  "Хэвлэл мэдээлэл, сэтгүүл зүй, дизайн",
+  "Энгийн ажил мэргэжил, үйлчилгээ",
+  "Эрүүл мэнд",
+  "Эрчим хүч, дулаан хангамж",
 ];
 
-const JOB_TYPE_OPTIONS = [
-  { value: "full-time", label: "Бүтэн цагийн" },
-  { value: "part-time", label: "Цагийн ажил" },
-  { value: "remote", label: "Гэрээс ажиллах / Remote" },
-  { value: "internship", label: "Дадлага ажил" },
+const SCHEDULE_OPTIONS: Array<{ value: DisplayJob["employmentType"] | "all"; label: string }> = [
+  { value: "Бүтэн цаг", label: "Бүтэн цагийн" },
+  { value: "Хагас цаг", label: "Цагийн ажил" },
+  { value: "Гэрээт", label: "Гэрээс ажиллах / Remote" },
+  { value: "Remote", label: "Дадлага ажил" },
 ];
 
 type JobsFilterPanelProps = {
+  selectedLocation: string | "all";
+  onSelectedLocationChange: (value: string | "all") => void;
   filterKeyword: string;
   onFilterKeywordChange: (value: string) => void;
   minSalaryFilter: number;
+  maxSalaryFilter: number;
   onMinSalaryFilterChange: (value: number) => void;
   manualSalaryInput: string;
   onManualSalaryInputChange: (value: string) => void;
   selectedSector: string | "all";
   onSelectedSectorChange: (value: string | "all") => void;
-  selectedLocation: string | "all";
-  onSelectedLocationChange: (value: string | "all") => void;
-  jobTypeFilters: string[];
-  onJobTypeFiltersChange: (value: string[]) => void;
+  selectedSchedule: DisplayJob["employmentType"] | "all";
+  onSelectedScheduleChange: (value: DisplayJob["employmentType"] | "all") => void;
+  accessibleOnly: boolean;
+  onAccessibleOnlyChange: (value: boolean) => void;
   onReset: () => void;
 };
 
 export function JobsFilterPanel({
+  selectedLocation,
+  onSelectedLocationChange,
   filterKeyword,
   onFilterKeywordChange,
   minSalaryFilter,
+  maxSalaryFilter,
   onMinSalaryFilterChange,
   manualSalaryInput,
   onManualSalaryInputChange,
   selectedSector,
   onSelectedSectorChange,
-  selectedLocation,
-  onSelectedLocationChange,
-  jobTypeFilters,
-  onJobTypeFiltersChange,
+  selectedSchedule,
+  onSelectedScheduleChange,
   onReset,
 }: JobsFilterPanelProps) {
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [isLocationOpen, setIsLocationOpen] = useState(false);
+  const categoryWrapRef = useRef<HTMLDivElement | null>(null);
+  const locationWrapRef = useRef<HTMLDivElement | null>(null);
+
   const categoryOptions = useMemo(
     () => [
       { value: "all", label: "Бүх ангилал" },
-      ...landingCategories.map((category) => ({
-        value: category.key,
-        label: category.name,
-      })),
-      ...EXTRA_CATEGORY_OPTIONS.map((category) => ({
-        value: category,
-        label: category,
-      })),
+      ...landingCategories.map((c) => ({ value: c.key, label: c.name })),
+      ...EXTRA_CATEGORY_OPTIONS.map((c) => ({ value: c, label: c })),
     ],
     [],
   );
 
-  function toggleJobType(value: string) {
-    onJobTypeFiltersChange(
-      jobTypeFilters.includes(value)
-        ? jobTypeFilters.filter((item) => item !== value)
-        : [...jobTypeFilters, value],
-    );
-  }
+  useEffect(() => {
+    const onPointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (categoryWrapRef.current && !categoryWrapRef.current.contains(target)) setIsCategoryOpen(false);
+      if (locationWrapRef.current && !locationWrapRef.current.contains(target)) setIsLocationOpen(false);
+    };
+    window.addEventListener("mousedown", onPointerDown);
+    return () => window.removeEventListener("mousedown", onPointerDown);
+  }, []);
+
+  const selectedCategoryLabel =
+    categoryOptions.find((o) => o.value === selectedSector)?.label ?? "Бүх ангилал";
+
+  const locationOptions = ["all", "Улаанбаатар", "Remote", "Дархан", "Эрдэнэт"] as const;
+  const selectedLocationLabel =
+    selectedLocation === "all" ? "Бүх байршил" : selectedLocation;
 
   return (
     <div className={styles.jobsFilterRail}>
-      <aside className={styles.jobsFilterPanel}  >
-        <div className={styles.cleanFilterHead}>
-          <h3>Хайлт &amp; шүүлтүүр</h3>
-        </div>
+      <aside className={styles.jobsFilterPanelNew}>
+        <h3 className={styles.jobsFilterTitleNew}>Хайлт &amp; шүүлтүүр</h3>
 
-        <label className={styles.jobsFilterSearch}>
+        {/* Search */}
+        <label className={styles.jobsFilterSearchNew}>
           <span className={styles.jobsFilterSearchIcon}>⌕</span>
           <input
-            onChange={(event) => onFilterKeywordChange(event.target.value)}
+            onChange={(e) => onFilterKeywordChange(e.target.value)}
             placeholder="Албан тушаал, компани..."
             value={filterKeyword}
           />
           {filterKeyword ? (
-            <button aria-label="Clear search" className={styles.jobsFilterSearchClear} onClick={() => onFilterKeywordChange("")} type="button">
+            <button
+              aria-label="Цэвэрлэх"
+              className={styles.jobsFilterSearchClear}
+              onClick={() => onFilterKeywordChange("")}
+              type="button"
+            >
               ×
             </button>
           ) : null}
         </label>
 
-        <div className={styles.jobsFilterSection}>
-          <p className={styles.jobsFilterSectionTitle}>Ангилал</p>
-          <select className={styles.jobsFilterNativeSelect} onChange={(event) => onSelectedSectorChange(event.target.value)} value={selectedSector}>
-            {categoryOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+        {/* Ангилал */}
+        <div className={styles.jobsFilterGroupNew}>
+          <p className={styles.jobsFilterGroupLabel}>АНГИЛАЛ</p>
+          <div className={styles.jobsCategoryDropdown} ref={categoryWrapRef}>
+            <button
+              className={styles.jobsFilterDropBtn}
+              onClick={() => { setIsCategoryOpen((o) => !o); setIsLocationOpen(false); }}
+              type="button"
+            >
+              <span>{selectedCategoryLabel}</span>
+              <span className={styles.jobsFilterDropArrow}>{isCategoryOpen ? "▴" : "▾"}</span>
+            </button>
+            {isCategoryOpen ? (
+              <div className={styles.jobsCategoryList}>
+                {categoryOptions.map((opt) => (
+                  <button
+                    className={`${styles.jobsCategoryItem} ${selectedSector === opt.value ? styles.jobsCategoryItemActive : ""}`}
+                    key={opt.value}
+                    onClick={() => { onSelectedSectorChange(opt.value); setIsCategoryOpen(false); }}
+                    type="button"
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </div>
 
-        <div className={styles.jobsFilterSection}>
-          <p className={styles.jobsFilterSectionTitle}>Байршил</p>
-          <select className={styles.jobsFilterNativeSelect} onChange={(event) => onSelectedLocationChange(event.target.value)} value={selectedLocation}>
-            {LOCATION_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+        {/* Байршил */}
+        <div className={styles.jobsFilterGroupNew}>
+          <p className={styles.jobsFilterGroupLabel}>БАЙРШИЛ</p>
+          <div className={styles.jobsCategoryDropdown} ref={locationWrapRef}>
+            <button
+              className={styles.jobsFilterDropBtn}
+              onClick={() => { setIsLocationOpen((o) => !o); setIsCategoryOpen(false); }}
+              type="button"
+            >
+              <span>{selectedLocationLabel}</span>
+              <span className={styles.jobsFilterDropArrow}>{isLocationOpen ? "▴" : "▾"}</span>
+            </button>
+            {isLocationOpen ? (
+              <div className={styles.jobsCategoryList}>
+                {locationOptions.map((loc) => (
+                  <button
+                    className={`${styles.jobsCategoryItem} ${selectedLocation === loc ? styles.jobsCategoryItemActive : ""}`}
+                    key={loc}
+                    onClick={() => {
+                      onSelectedLocationChange(loc);
+                      setIsLocationOpen(false);
+                    }}
+                    type="button"
+                  >
+                    {loc === "all" ? "Бүх байршил" : loc}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </div>
 
-        <div className={styles.jobsFilterSection}>
-          <p className={styles.jobsFilterSectionTitle}>Ажлын төрөл</p>
-          <div className={styles.cleanJobTypeList}>
-            {JOB_TYPE_OPTIONS.map((option) => (
-              <label className={styles.cleanJobTypeOption} key={option.value}>
-                <input checked={jobTypeFilters.includes(option.value)} onChange={() => toggleJobType(option.value)} type="checkbox" />
-                <span />
-                {option.label}
+        {/* Ажлын төрөл */}
+        <div className={styles.jobsFilterGroupNew}>
+          <p className={styles.jobsFilterGroupLabel}>АЖЛЫН ТӨРӨЛ</p>
+          <div className={styles.jobsFilterCheckboxGroup}>
+            {SCHEDULE_OPTIONS.map((opt) => (
+              <label className={styles.jobsFilterCheckboxRow} key={opt.value}>
+                <input
+                  checked={selectedSchedule === opt.value}
+                  onChange={() =>
+                    onSelectedScheduleChange(selectedSchedule === opt.value ? "all" : opt.value)
+                  }
+                  type="checkbox"
+                  className={styles.jobsFilterCheckboxInput}
+                />
+                <span>{opt.label}</span>
               </label>
             ))}
           </div>
         </div>
 
-        <div className={styles.jobsFilterSection}>
-          <p className={styles.jobsFilterSectionTitle}>Цалин</p>
+        {/* Цалин */}
+        <div className={styles.jobsFilterGroupNew}>
+          <p className={styles.jobsFilterGroupLabel}>ЦАЛИН</p>
           <div className={styles.jobsFilterRangeWrap}>
             <input
               className={styles.jobsFilterRange}
               max={10_000_000}
               min={0}
-              onChange={(event) => onMinSalaryFilterChange(Number(event.target.value))}
+              onChange={(e) => onMinSalaryFilterChange(Math.min(Number(e.target.value), maxSalaryFilter))}
               step={100_000}
               type="range"
               value={minSalaryFilter}
@@ -150,10 +232,10 @@ export function JobsFilterPanel({
             <span>10M+</span>
           </div>
           <label className={styles.jobsFilterManualSalary}>
-            <span>Доод хэмжээ</span>
+            <span>Доод хязгаар</span>
             <input
               inputMode="numeric"
-              onChange={(event) => onManualSalaryInputChange(event.target.value)}
+              onChange={(e) => onManualSalaryInputChange(e.target.value)}
               placeholder="3000000 эсвэл 3 сая"
               type="text"
               value={manualSalaryInput}
@@ -161,7 +243,7 @@ export function JobsFilterPanel({
           </label>
         </div>
 
-        <button className={styles.jobsFilterClear} onClick={onReset} type="button">
+        <button className={styles.jobsFilterClearNew} onClick={onReset} type="button">
           Шүүлтүүр цэвэрлэх
         </button>
       </aside>

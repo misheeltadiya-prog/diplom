@@ -1,5 +1,6 @@
-﻿import { NextResponse } from "next/server";
-import { deleteJob, type JobPayload, updateJob } from "@/lib/jobs-store";
+import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/auth";
+import { deleteJob, getJobOwnerUserId, type JobPayload, updateJob } from "@/lib/jobs-store";
 
 type IncomingJobPayload = Partial<JobPayload>;
 
@@ -17,12 +18,38 @@ function parseJobId(rawId: string) {
   return id;
 }
 
+async function ensureJobOwnerAccess(jobId: string) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return { error: "Sign in required.", status: 401 as const };
+  }
+
+  if (user.role !== "company" && user.role !== "admin") {
+    return { error: "Only company users can manage jobs.", status: 403 as const };
+  }
+
+  if (user.role !== "admin") {
+    const ownerId = await getJobOwnerUserId(jobId);
+    if (ownerId == null || ownerId !== user.id) {
+      return { error: "You can manage only your own jobs.", status: 403 as const };
+    }
+  }
+
+  return { user };
+}
+
 export async function PUT(request: Request, context: RouteContext) {
   const { id: rawId } = await context.params;
   const id = parseJobId(rawId);
 
   if (!id) {
     return NextResponse.json({ error: "Invalid job id." }, { status: 400 });
+  }
+
+  const access = await ensureJobOwnerAccess(id);
+  if ("error" in access) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
   try {
@@ -67,6 +94,11 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   if (!id) {
     return NextResponse.json({ error: "Invalid job id." }, { status: 400 });
+  }
+
+  const access = await ensureJobOwnerAccess(id);
+  if ("error" in access) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
   try {

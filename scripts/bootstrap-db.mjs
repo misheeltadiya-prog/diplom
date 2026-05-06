@@ -33,7 +33,6 @@ async function runSqlFile(conn, filePath) {
 async function main() {
   const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
   const schemaPath = path.join(root, "database", "schema.sql");
-  const seedPath = path.join(root, "database", "workbench-seed.sql");
   const envPath = path.join(root, ".env.local");
 
   try {
@@ -58,12 +57,7 @@ async function main() {
 
   try {
     await runSqlFile(connection, schemaPath);
-    await runSqlFile(connection, seedPath);
-    const [rows] = await connection.query(
-      "SELECT COUNT(*) AS total FROM zeel_platform.job_seeker_profiles WHERE is_active = 1",
-    );
-    const total = Number(rows?.[0]?.total ?? 0);
-    console.log(`Database bootstrap complete. job_seeker_profiles: ${total} rows.`);
+    console.log("Database bootstrap complete (schema only).");
   } finally {
     await connection.end();
   }

@@ -1,11 +1,12 @@
 "use client";
 
 import { FormEvent, RefObject, useCallback, useEffect, useMemo, useState } from "react";
-import { companies } from "./companies-directory";
+import type { SessionUser } from "@/lib/auth";
+import { CompanyProfileForm } from "@/app/profile/company/company-profile-form";
 import { landingCategories, type LandingCategory, type LandingCategoryKey } from "./data";
 import { JobsFilterPanel } from "./jobs-filter-panel";
 import { JobsListCards } from "./jobs-list-cards";
-import { type DisplayJob, type JobBoardTab, type JobForm, type JobRecord } from "./jobs-types";
+import { type DisplayJob, type JobForm, type JobRecord } from "./jobs-types";
 import styles from "./index-landing.module.css";
 
 type JobsListSectionProps = {
@@ -19,17 +20,21 @@ type JobsListSectionProps = {
   onComposerClose: () => void;
   onVisibleCountChange: (count: number) => void;
   showComposer: boolean;
+  currentUser?: SessionUser | null;
+  /** URL ?mine=1 — зөвхөн өөрийн оруулсан зарууд */
+  mineOnly?: boolean;
+  /** URL ?applied=1 — зөвхөн өргөдөл илгээсэн ажлын зарууд */
+  appliedJobsOnly?: boolean;
+  onOpenJobComposer?: () => void;
+  /** Freelancer: жагсаалтад гаргах profile зарын цонх нээх (ажлын зар биш) */
+  onOpenFreelancerPublish?: () => void;
+  /** Зар амжилттай нэмэгдсэний дараа (энэ хуудасны гадна) ангилал/хайлт цэвэрлэх */
+  onClearLandingFilters?: () => void;
 };
 
 const categoryMap = new Map(landingCategories.map((category) => [category.key, category]));
 const allKnownTags = Array.from(new Set(landingCategories.flatMap((category) => category.tags)));
 const JOBS_PER_PAGE = 10;
-
-const jobBoardStats = [
-  { value: "500+", label: "Open Jobs" },
-  { value: "300+", label: "Companies" },
-  { value: "1,200+", label: "Applicants" },
-];
 
 const emptyJobForm: JobForm = {
   title: "",
@@ -47,31 +52,19 @@ function normalizeText(value: string) {
 function normalizeEmploymentType(value: string) {
   const normalized = normalizeText(value);
 
-  if (normalized.includes("remote")) {
+  if (normalized === "remote") {
     return "Remote";
   }
 
-  if (normalized.includes("open")) {
+  if (normalized === "open") {
     return "Нээлттэй";
-  }
-
-  if (normalized.includes("бүтэн") || normalized.includes("full")) {
-    return "Бүтэн цаг";
-  }
-
-  if (normalized.includes("хагас") || normalized.includes("цагийн") || normalized.includes("part")) {
-    return "Цагийн ажил";
-  }
-
-  if (normalized.includes("гэрээ") || normalized.includes("contract")) {
-    return "Гэрээт";
   }
 
   return value;
 }
 
 function extractSalaryScore(rawSalary: string) {
-  const normalized = normalizeText(rawSalary);
+  const normalized = rawSalary.toLowerCase();
   const numbers = rawSalary.match(/[\d.,]+/g)?.map((value) => Number(value.replace(/,/g, ""))) ?? [];
 
   if (numbers.length === 0) {
@@ -147,70 +140,14 @@ function buildSearchableText(job: JobRecord, category: LandingCategory, tags: st
 
 function matchesSearch(job: DisplayJob, query: string) {
   const normalized = normalizeText(query);
+
   if (!normalized) {
     return true;
   }
 
-  return normalized
-    .split(" ")
-    .filter(Boolean)
-    .every((token) => job.searchableText.includes(token));
-}
+  const tokens = normalized.split(" ").filter(Boolean);
 
-function isRemoteJob(job: DisplayJob) {
-  return normalizeText(`${job.location} ${job.employmentType}`).includes("remote");
-}
-
-function isFullTimeJob(job: DisplayJob) {
-  const text = normalizeText(job.employmentType);
-  return text.includes("бүтэн") || text.includes("full");
-}
-
-function isPartTimeJob(job: DisplayJob) {
-  const text = normalizeText(job.employmentType);
-  return text.includes("цагийн") || text.includes("part") || text.includes("хагас");
-}
-
-function matchesJobBoardTab(job: DisplayJob, tab: JobBoardTab) {
-  if (tab === "remote") {
-    return isRemoteJob(job);
-  }
-
-  if (tab === "full-time") {
-    return isFullTimeJob(job);
-  }
-
-  if (tab === "part-time") {
-    return isPartTimeJob(job);
-  }
-
-  return true;
-}
-
-function matchesJobTypeFilters(job: DisplayJob, filters: string[]) {
-  if (filters.length === 0) {
-    return true;
-  }
-
-  return filters.some((filter) => {
-    if (filter === "full-time") {
-      return isFullTimeJob(job);
-    }
-
-    if (filter === "part-time") {
-      return isPartTimeJob(job);
-    }
-
-    if (filter === "remote") {
-      return isRemoteJob(job);
-    }
-
-    if (filter === "internship") {
-      return normalizeText(`${job.title} ${job.description} ${job.employmentType}`).includes("дадлага");
-    }
-
-    return true;
-  });
+  return tokens.every((token) => job.searchableText.includes(token));
 }
 
 function buildApplicantCount(
@@ -227,27 +164,10 @@ function buildApplicantCount(
   };
 
   const levelBoost = job.level === "Senior" ? 12 : job.level === "Junior" ? 5 : 8;
-  const sourceBoost = job.source === "seed" ? 6 : 14;
+  const sourceBoost = 14;
   const salaryBoost = Math.round(job.salaryScore / 450000);
 
   return Math.max(9, sourceBoost + categoryBoostMap[job.categoryKey] + levelBoost + salaryBoost + (index % 11));
-}
-
-function buildCompanySeedJobs(now: number): JobRecord[] {
-  return companies.map((company, index) => {
-    const createdAt = new Date(now - (index + 1) * 60_000).toISOString();
-    return {
-      id: `seed-${company.domain}`,
-      title: `${company.industry} Specialist`,
-      companyName: company.name,
-      location: company.city,
-      employmentType: index % 3 === 0 ? "Remote" : "Бүтэн цаг",
-      salary: `${(2.4 + (index % 6) * 0.25).toFixed(1)} сая ₮`,
-      description: `${company.name}-д нээлттэй боломж байна. ${company.industry} чиглэлээр ажиллах, багтайгаа хурдан уялдах, чанартай үр дүн гаргах хүнийг хайж байна.`,
-      createdAt,
-      createdByName: null,
-    };
-  });
 }
 
 export function JobsListSection({
@@ -261,6 +181,12 @@ export function JobsListSection({
   onComposerClose,
   onVisibleCountChange,
   showComposer,
+  currentUser = null,
+  mineOnly = false,
+  appliedJobsOnly = false,
+  onOpenJobComposer,
+  onOpenFreelancerPublish,
+  onClearLandingFilters,
 }: JobsListSectionProps) {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -272,12 +198,135 @@ export function JobsListSection({
   const [debouncedFilterKeyword, setDebouncedFilterKeyword] = useState("");
   const [manualSalaryInput, setManualSalaryInput] = useState("");
   const [minSalaryFilter, setMinSalaryFilter] = useState(0);
-  const [maxSalaryFilter] = useState(10_000_000);
+  const [maxSalaryFilter, setMaxSalaryFilter] = useState(10_000_000);
   const [selectedSector, setSelectedSector] = useState<string | "all">("all");
+  const [selectedSchedule, setSelectedSchedule] = useState<DisplayJob["employmentType"] | "all">("all");
   const [selectedLocation, setSelectedLocation] = useState<string | "all">("all");
-  const [jobTypeFilters, setJobTypeFilters] = useState<string[]>([]);
+  const [accessibleOnly, setAccessibleOnly] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeTab, setActiveTab] = useState<JobBoardTab>("all");
+  const [companySheetTab, setCompanySheetTab] = useState<"job" | "company">("job");
+  const [applicationStatusByJobId, setApplicationStatusByJobId] = useState<
+    Record<string, "pending" | "accepted" | "rejected">
+  >({});
+  const [myAppsLoading, setMyAppsLoading] = useState(false);
+
+  useEffect(() => {
+    if (showComposer) {
+      setCompanySheetTab("job");
+    }
+  }, [showComposer]);
+
+  useEffect(() => {
+    if (!showComposer) {
+      return;
+    }
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [showComposer]);
+
+  useEffect(() => {
+    if (!showComposer) {
+      return;
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onComposerClose();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showComposer, onComposerClose]);
+
+  useEffect(() => {
+    if (!showComposer || currentUser?.role !== "company") {
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch("/api/company-profile", { cache: "no-store", credentials: "same-origin" });
+        const j = (await r.json()) as { ok?: boolean; profile?: { company_name?: string } };
+        if (
+          cancelled ||
+          !r.ok ||
+          j.ok === false ||
+          !j.profile?.company_name?.trim()
+        ) {
+          return;
+        }
+        setNewJob((prev) => ({
+          ...prev,
+          companyName: prev.companyName.trim() ? prev.companyName : j.profile!.company_name!.trim(),
+        }));
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [showComposer, currentUser?.role]);
+
+  useEffect(() => {
+    if (!appliedJobsOnly || !currentUser || currentUser.role === "company") {
+      setApplicationStatusByJobId({});
+      setMyAppsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setMyAppsLoading(true);
+
+    (async () => {
+      try {
+        const response = await fetch("/api/profile/my-applications", {
+          cache: "no-store",
+          credentials: "same-origin",
+        });
+        const data = (await response.json()) as {
+          ok?: boolean;
+          applications?: Array<{ jobId: string; status: string }>;
+          error?: string;
+        };
+        if (cancelled) {
+          return;
+        }
+        if (!response.ok || !data.ok) {
+          setApplicationStatusByJobId({});
+          if (data.error) {
+            onToast(data.error);
+          }
+          return;
+        }
+        const next: Record<string, "pending" | "accepted" | "rejected"> = {};
+        for (const row of data.applications ?? []) {
+          if (!row.jobId || row.jobId in next) {
+            continue;
+          }
+          const s = row.status;
+          if (s === "pending" || s === "accepted" || s === "rejected") {
+            next[row.jobId] = s;
+          }
+        }
+        setApplicationStatusByJobId(next);
+      } catch {
+        if (!cancelled) {
+          setApplicationStatusByJobId({});
+        }
+      } finally {
+        if (!cancelled) {
+          setMyAppsLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [appliedJobsOnly, currentUser, onToast]);
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -310,7 +359,9 @@ export function JobsListSection({
       setDebouncedFilterKeyword(filterKeyword);
     }, 250);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [filterKeyword]);
 
   const combinedJobs = useMemo<DisplayJob[]>(() => {
@@ -324,7 +375,7 @@ export function JobsListSection({
           ? "Junior"
           : "Mid";
       const employmentType = normalizeEmploymentType(job.employmentType);
-      const highlight = `${category.name} ангиллын live database ажлын санал`;
+      const highlight = `${category.name} ангилалд автоматаар ангилсан live database ажлын санал`;
 
       return {
         ...job,
@@ -341,57 +392,55 @@ export function JobsListSection({
       };
     });
 
-    const seedJobs = buildCompanySeedJobs(Date.now()).map((job) => {
-      const categoryKey = inferCategoryKey(job);
-      const category = categoryMap.get(categoryKey) ?? landingCategories[0];
-      const tags = extractTags(job, category.tags);
-      const level = "Mid";
-      const employmentType = normalizeEmploymentType(job.employmentType);
-      const highlight = `${category.name} ангиллын demo ажлын санал`;
-
-      return {
-        ...job,
-        employmentType,
-        source: "seed" as const,
-        categoryKey,
-        tags,
-        level,
-        accent: category.accent,
-        applicantCount: 0,
-        searchableText: buildSearchableText({ ...job, employmentType }, category, tags, level, highlight),
-        highlight,
-        salaryScore: extractSalaryScore(job.salary),
-      };
-    });
-
-    return [...databaseJobs, ...seedJobs]
+    return databaseJobs
       .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
-      .map((job, index) => ({
-        ...job,
-        applicantCount: buildApplicantCount(job, index),
-      }));
+      .map((job, index) => {
+        const applicantCount = buildApplicantCount(job, index);
+        return { ...job, applicantCount };
+      });
   }, [jobs]);
+
+  const scopedJobs = useMemo(() => {
+    let list = combinedJobs;
+    if (mineOnly) {
+      list = list.filter(
+        (job) =>
+          job.source === "database" &&
+          typeof currentUser?.id === "number" &&
+          job.createdByUserId === currentUser.id,
+      );
+    }
+    if (appliedJobsOnly && currentUser && currentUser.role !== "company") {
+      const ids = new Set(Object.keys(applicationStatusByJobId));
+      list = list.filter((job) => job.source === "database" && ids.has(job.id));
+    }
+    return list;
+  }, [appliedJobsOnly, applicationStatusByJobId, combinedJobs, currentUser, mineOnly]);
 
   const parsedManualSalary = useMemo(() => parseManualSalaryInput(manualSalaryInput), [manualSalaryInput]);
 
   const filteredJobs = useMemo(
     () =>
-      combinedJobs.filter((job) => {
+      scopedJobs.filter((job) => {
         const matchesSaved = !favoritesOnly || favoriteJobIds.includes(job.id);
         const matchesCategory = selectedCategory === "all" || job.categoryKey === selectedCategory;
         const matchesHeaderSearch = matchesSearch(job, searchValue);
         const matchesFilterKeyword = matchesSearch(job, debouncedFilterKeyword);
-        const remote = isRemoteJob(job);
+        const locHay = normalizeText(job.location);
         const matchesLocation =
           selectedLocation === "all" ||
-          normalizeText(job.location).includes(normalizeText(selectedLocation)) ||
-          (selectedLocation === "remote" && remote);
+          (selectedLocation === "Remote"
+            ? locHay.includes("remote") || normalizeText(job.employmentType).includes("remote")
+            : locHay.includes(normalizeText(selectedLocation)));
         const matchesSalary = job.salaryScore >= minSalaryFilter && job.salaryScore <= maxSalaryFilter;
         const matchesManualSalary = parsedManualSalary === null || job.salaryScore >= parsedManualSalary;
         const matchesSector =
           selectedSector === "all" ||
           job.categoryKey === selectedSector ||
           job.searchableText.includes(normalizeText(selectedSector));
+        const matchesSchedule = selectedSchedule === "all" || job.employmentType === selectedSchedule;
+        const matchesAccessibility =
+          !accessibleOnly || normalizeText(`${job.title} ${job.description}`).includes("нээлттэй");
 
         return (
           matchesSaved &&
@@ -402,35 +451,25 @@ export function JobsListSection({
           matchesSalary &&
           matchesManualSalary &&
           matchesSector &&
-          matchesJobTypeFilters(job, jobTypeFilters) &&
-          matchesJobBoardTab(job, activeTab)
+          matchesSchedule &&
+          matchesAccessibility
         );
       }),
     [
-      activeTab,
-      combinedJobs,
-      debouncedFilterKeyword,
+      accessibleOnly,
       favoriteJobIds,
+      scopedJobs,
       favoritesOnly,
-      jobTypeFilters,
+      debouncedFilterKeyword,
+      parsedManualSalary,
       maxSalaryFilter,
       minSalaryFilter,
-      parsedManualSalary,
       searchValue,
       selectedCategory,
-      selectedLocation,
+      selectedSchedule,
       selectedSector,
+      selectedLocation,
     ],
-  );
-
-  const tabCounts = useMemo(
-    () => ({
-      all: combinedJobs.length,
-      remote: combinedJobs.filter((job) => isRemoteJob(job)).length,
-      "full-time": combinedJobs.filter((job) => isFullTimeJob(job)).length,
-      "part-time": combinedJobs.filter((job) => isPartTimeJob(job)).length,
-    }),
-    [combinedJobs],
   );
 
   useEffect(() => {
@@ -440,15 +479,19 @@ export function JobsListSection({
   useEffect(() => {
     setCurrentPage(1);
   }, [
-    activeTab,
     searchValue,
     selectedCategory,
     favoritesOnly,
     filterKeyword,
     minSalaryFilter,
+    maxSalaryFilter,
     selectedSector,
+    selectedSchedule,
     selectedLocation,
-    jobTypeFilters,
+    accessibleOnly,
+    mineOnly,
+    appliedJobsOnly,
+    applicationStatusByJobId,
   ]);
 
   const totalPages = Math.max(1, Math.ceil(filteredJobs.length / JOBS_PER_PAGE));
@@ -470,6 +513,7 @@ export function JobsListSection({
       const response = await fetch("/api/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify(newJob),
       });
 
@@ -481,8 +525,11 @@ export function JobsListSection({
 
       setNewJob(emptyJobForm);
       onComposerClose();
+      resetFilters();
+      onClearLandingFilters?.();
       onToast("Ажлын зар нэмэгдлээ.");
       await fetchJobs();
+      window.dispatchEvent(new Event("cwork:platform-stats-changed"));
     } catch (error) {
       onToast(error instanceof Error ? error.message : "Ажлын зар нэмэхэд алдаа гарлаа.");
     } finally {
@@ -502,6 +549,7 @@ export function JobsListSection({
       const response = await fetch(`/api/jobs/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify(editJob),
       });
 
@@ -521,148 +569,289 @@ export function JobsListSection({
     }
   }
 
+  function startEdit(job: JobRecord) {
+    setEditingId(job.id);
+    setEditJob({
+      title: job.title,
+      companyName: job.companyName,
+      location: job.location,
+      employmentType: job.employmentType,
+      salary: job.salary,
+      description: job.description,
+    });
+  }
+
+  async function removeJob(id: string) {
+    const confirmed = window.confirm("Энэ ажлын зарыг устгах уу?");
+    if (!confirmed) {
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await fetch(`/api/jobs/${id}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      const payload = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Ажлын зар устгахад алдаа гарлаа.");
+      }
+
+      if (editingId === id) {
+        cancelEdit();
+      }
+
+      onToast("Ажлын зар устгагдлаа.");
+      await fetchJobs();
+    } catch (error) {
+      onToast(error instanceof Error ? error.message : "Ажлын зар устгаж чадсангүй.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   function resetFilters() {
     setFilterKeyword("");
     setManualSalaryInput("");
     setMinSalaryFilter(0);
+    setMaxSalaryFilter(10_000_000);
     setSelectedSector("all");
+    setSelectedSchedule("all");
     setSelectedLocation("all");
-    setJobTypeFilters([]);
-    setActiveTab("all");
+    setAccessibleOnly(false);
   }
 
   return (
     <div className={styles.jobsBoard} id="jobs" ref={composerRef}>
       {showComposer ? (
-        <form className={styles.jobsComposer} onSubmit={handleCreate}>
-          <div className={styles.jobsComposerTop}>
-            <div>
-              <div className={styles.jobsFormEyebrow}>Post Job</div>
-              <h3 className={styles.jobsFormTitle}>Шинэ ажлын зар нэмэх</h3>
-              <p className={styles.jobsFormCopy}>Ажлаа нийтлээд шууд энэ жагсаалт дээр гаргаарай.</p>
-            </div>
-            <button className={styles.jobsComposerClose} onClick={onComposerClose} type="button">
-              Хаах
+        <div className={styles.landingSheetOverlay} onClick={onComposerClose} role="presentation">
+          <article
+            aria-labelledby="jobs-post-sheet-title"
+            className={`${styles.freelancerGridCard} ${styles.landingSheetPanel}`}
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+          >
+            <button aria-label="Хаах" className={styles.landingSheetClose} onClick={onComposerClose} type="button">
+              ×
             </button>
-          </div>
+            <h2 className={styles.landingSheetTitle} id="jobs-post-sheet-title">
+              Зар оруулах
+            </h2>
+            <p className={styles.landingSheetSubtitle}>
+              Ажлын зар эндээс · компанийн мэдээлэл нь profile хуудастай ижил талбарууд
+            </p>
+            {currentUser?.role === "freelancer" ? (
+              <div className={styles.landingSheetGate}>
+                <p className={styles.landingSheetGateText}>
+                  Энэ цонхноос <strong>компани ажлын зар</strong> оруулна. Freelancer-ийн зар (профайл, үнэ, portfolio) нь{" "}
+                  <strong>Freelancers</strong> жагсаалтад гарна — доорх товчоор бөглөнө үү.
+                </p>
+                <button
+                  className={styles.jobsTabMore}
+                  onClick={() => {
+                    onOpenFreelancerPublish?.();
+                    onComposerClose();
+                  }}
+                  style={{ width: "100%", maxWidth: 320, justifyContent: "center" }}
+                  type="button"
+                >
+                  Freelancer зар оруулах
+                </button>
+              </div>
+            ) : currentUser?.role === "company" ? (
+              <div className={styles.landingSheetTabs} role="tablist">
+                <button
+                  aria-selected={companySheetTab === "job"}
+                  className={`${styles.landingSheetTab} ${companySheetTab === "job" ? styles.landingSheetTabActive : ""}`}
+                  onClick={() => setCompanySheetTab("job")}
+                  role="tab"
+                  type="button"
+                >
+                  Ажлын зар
+                </button>
+                <button
+                  aria-selected={companySheetTab === "company"}
+                  className={`${styles.landingSheetTab} ${companySheetTab === "company" ? styles.landingSheetTabActive : ""}`}
+                  onClick={() => setCompanySheetTab("company")}
+                  role="tab"
+                  type="button"
+                >
+                  Компани
+                </button>
+              </div>
+            ) : null}
+            {currentUser?.role === "company" && companySheetTab === "company" ? (
+              <CompanyProfileForm />
+            ) : currentUser?.role === "freelancer" ? null : (
+              <form className={`${styles.jobsComposer} ${styles.jobsComposerInSheet}`} onSubmit={handleCreate}>
+                <div className={styles.jobsComposerTop}>
+                  <div>
+                    <div className={styles.jobsFormEyebrow}>Ажлын зар</div>
+                    <h3 className={styles.jobsFormTitle}>Шинэ зар</h3>
+                    <p className={styles.jobsFormCopy}>Бүх талбарыг бөглөөд жагсаалтад нэмнэ үү.</p>
+                  </div>
+                </div>
 
-          <div className={styles.jobsFormRow}>
-            <input
-              onChange={(event) => setNewJob({ ...newJob, title: event.target.value })}
-              placeholder="Ажлын гарчиг"
-              required
-              value={newJob.title}
-            />
-            <input
-              onChange={(event) => setNewJob({ ...newJob, companyName: event.target.value })}
-              placeholder="Компани"
-              required
-              value={newJob.companyName}
-            />
-          </div>
-
-          <div className={styles.jobsFormRow}>
-            <input
-              onChange={(event) => setNewJob({ ...newJob, location: event.target.value })}
-              placeholder="Байршил"
-              required
-              value={newJob.location}
-            />
-            <input
-              onChange={(event) => setNewJob({ ...newJob, salary: event.target.value })}
-              placeholder="Цалин"
-              required
-              value={newJob.salary}
-            />
-          </div>
-
-          <div className={styles.jobsFormRow}>
-            <select
-              onChange={(event) => setNewJob({ ...newJob, employmentType: event.target.value })}
-              value={newJob.employmentType}
-            >
-              <option>Бүтэн цаг</option>
-              <option>Цагийн ажил</option>
-              <option>Гэрээт</option>
-              <option>Remote</option>
-            </select>
-            <button disabled={submitting} type="submit">
-              {submitting ? "Хадгалж байна..." : "Post job"}
-            </button>
-          </div>
-
-          <textarea
-            onChange={(event) => setNewJob({ ...newJob, description: event.target.value })}
-            placeholder="Ажлын тайлбар"
-            required
-            rows={4}
-            value={newJob.description}
-          />
-        </form>
+                <div className={styles.jobsFormRow}>
+                  <input
+                    onChange={(event) => setNewJob({ ...newJob, title: event.target.value })}
+                    placeholder="Ажлын гарчиг"
+                    required
+                    value={newJob.title}
+                  />
+                  <input
+                    onChange={(event) => setNewJob({ ...newJob, companyName: event.target.value })}
+                    placeholder="Компани"
+                    required
+                    value={newJob.companyName}
+                  />
+                </div>
+                <div className={styles.jobsFormRow}>
+                  <input
+                    onChange={(event) => setNewJob({ ...newJob, location: event.target.value })}
+                    placeholder="Байршил"
+                    required
+                    value={newJob.location}
+                  />
+                  <input
+                    onChange={(event) => setNewJob({ ...newJob, salary: event.target.value })}
+                    placeholder="Цалин"
+                    required
+                    value={newJob.salary}
+                  />
+                </div>
+                <div className={styles.jobsFormRow}>
+                  <select
+                    onChange={(event) => setNewJob({ ...newJob, employmentType: event.target.value })}
+                    value={newJob.employmentType}
+                  >
+                    <option>Бүтэн цаг</option>
+                    <option>Хагас цаг</option>
+                    <option>Гэрээт</option>
+                    <option>Remote</option>
+                  </select>
+                  <button disabled={submitting} type="submit">
+                    {submitting ? "Хадгалж байна..." : "Зар нийтлэх"}
+                  </button>
+                </div>
+                <textarea
+                  onChange={(event) => setNewJob({ ...newJob, description: event.target.value })}
+                  placeholder="Ажлын тайлбар"
+                  required
+                  rows={4}
+                  value={newJob.description}
+                />
+              </form>
+            )}
+          </article>
+        </div>
       ) : null}
 
-      <section className={styles.cleanJobsHero}>
-        <div className={styles.cleanJobsHeroCopy}>
-          <h2>
-            Илүү сайн <span>ажил.</span> Илүү хурдан.
-          </h2>
-          <p>Монголын хамгийн хурдан өсч буй hiring platform - топ компаниуд, бодит боломжууд.</p>
-          <div className={styles.cleanJobsHeroActions}>
-            <a className={styles.cleanJobsHeroPrimary} href="#jobs-content">
-              Ажил хайх
-            </a>
-            <a className={styles.cleanJobsHeroSecondary} href="/register">
-              CV нэмэх
-            </a>
-          </div>
-          <div className={styles.cleanJobsHeroTrust}>300+ компани • 500+ нээлттэй ажлын байр</div>
-        </div>
-
-        <div className={styles.cleanJobsStatsGrid}>
-          {jobBoardStats.map((stat) => (
-            <div className={styles.cleanJobsStatCard} key={stat.label}>
-              <strong>{stat.value}</strong>
-              <small>{stat.label}</small>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* Tab bar */}
+      <div className={styles.jobsTabBar}>
+        <button
+          className={`${styles.jobsTab} ${selectedCategory === "all" ? styles.jobsTabActive : ""}`}
+          onClick={() => {}}
+          type="button"
+        >
+          {appliedJobsOnly
+            ? "Илгээсэн өргөдлийн зарууд"
+            : mineOnly
+              ? "\u041c\u0438\u043d\u0438\u0439 \u0437\u0430\u0440\u0443\u0443\u0434"
+              : "\u0411\u04af\u0445 \u0430\u0436\u043b\u0443\u0443\u0434"}
+          <span className={styles.jobsTabCount}>{scopedJobs.length}</span>
+        </button>
+        <button
+          className={`${styles.jobsTab} ${selectedSchedule === "Remote" ? styles.jobsTabActive : ""}`}
+          onClick={() => {}}
+          type="button"
+        >
+          {"Remote \u0430\u0436\u043b\u0443\u0443\u0434"}
+          <span className={styles.jobsTabCount}>
+            {scopedJobs.filter((j) => j.employmentType === "Remote").length}
+          </span>
+        </button>
+        <button
+          className={`${styles.jobsTab} ${selectedSchedule === "\u0411\u04af\u0442\u044d\u043d \u0446\u0430\u0433" ? styles.jobsTabActive : ""}`}
+          onClick={() => {}}
+          type="button"
+        >
+          {"\u0411\u04af\u0442\u044d\u043d \u0446\u0430\u0433\u0438\u0439\u043d"}
+          <span className={styles.jobsTabCount}>
+            {scopedJobs.filter((j) => j.employmentType === "\u0411\u04af\u0442\u044d\u043d \u0446\u0430\u0433").length}
+          </span>
+        </button>
+        <button
+          className={`${styles.jobsTab} ${selectedSchedule === "\u0425\u0430\u0433\u0430\u0441 \u0446\u0430\u0433" ? styles.jobsTabActive : ""}`}
+          onClick={() => {}}
+          type="button"
+        >
+          {"\u0426\u0430\u0433\u0438\u0439\u043d \u0430\u0436\u0438\u043b"}
+          <span className={styles.jobsTabCount}>
+            {scopedJobs.filter((j) => j.employmentType === "\u0425\u0430\u0433\u0430\u0441 \u0446\u0430\u0433").length}
+          </span>
+        </button>
+        {currentUser?.role === "company" || currentUser?.role === "admin" ? (
+          <button
+            className={styles.jobsTabMore}
+            onClick={() => {
+              onOpenJobComposer?.();
+            }}
+            type="button"
+          >
+            Зар оруулах
+          </button>
+        ) : null}
+      </div>
 
       <div className={styles.jobsContent} id="jobs-content">
         <JobsFilterPanel
+          selectedLocation={selectedLocation}
+          onSelectedLocationChange={setSelectedLocation}
+          accessibleOnly={accessibleOnly}
           filterKeyword={filterKeyword}
-          jobTypeFilters={jobTypeFilters}
+          maxSalaryFilter={maxSalaryFilter}
           manualSalaryInput={manualSalaryInput}
           minSalaryFilter={minSalaryFilter}
+          onAccessibleOnlyChange={setAccessibleOnly}
           onFilterKeywordChange={setFilterKeyword}
-          onJobTypeFiltersChange={setJobTypeFilters}
           onManualSalaryInputChange={setManualSalaryInput}
           onMinSalaryFilterChange={setMinSalaryFilter}
           onReset={resetFilters}
-          onSelectedLocationChange={setSelectedLocation}
+          onSelectedScheduleChange={setSelectedSchedule}
           onSelectedSectorChange={setSelectedSector}
-          selectedLocation={selectedLocation}
+          selectedSchedule={selectedSchedule}
           selectedSector={selectedSector}
         />
 
         <JobsListCards
-          activeTab={activeTab}
+          applicationStatusByJobId={applicationStatusByJobId}
+          currentUser={currentUser}
           editJob={editJob}
           editingId={editingId}
+          emptyHint={
+            appliedJobsOnly && currentUser && currentUser.role !== "company"
+              ? "Та одоогоор ажлын зар дээр өргөдөл илгээгүй эсвэл зар устгагдсан байна."
+              : undefined
+          }
           favoriteJobIds={favoriteJobIds}
           filteredJobs={filteredJobs}
-          jobBoardStats={jobBoardStats}
           paginatedJobs={paginatedJobs}
           currentPage={currentPage}
-          tabCounts={tabCounts}
           totalPages={totalPages}
-          loading={loading}
-          onApplyClick={(job) => onToast(`${job.title} дээр дэлгэрэнгүй урсгалыг дараагийн алхмаар холбоно.`)}
+          loading={
+            loading ||
+            Boolean(appliedJobsOnly && currentUser && currentUser.role !== "company" && myAppsLoading)
+          }
+          onToast={onToast}
           onCancelEdit={cancelEdit}
           onEditFieldChange={setEditJob}
           onPageChange={setCurrentPage}
+          onDeleteJob={removeJob}
           onSaveEdit={saveEdit}
-          onTabChange={setActiveTab}
+          onStartEdit={startEdit}
           submitting={submitting}
           onToggleFavorite={onToggleFavorite}
         />

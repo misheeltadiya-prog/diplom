@@ -1,4 +1,4 @@
-﻿import { randomUUID } from "crypto";
+import { randomUUID } from "crypto";
 import type { ResultSetHeader } from "mysql2";
 import type { Pool } from "mysql2/promise";
 import { getCurrentUser } from "@/lib/auth";
@@ -23,6 +23,7 @@ export type StoredJob = {
   description: string;
   createdAt: string;
   createdByName: string | null;
+  createdByUserId: number | null;
 };
 
 type JobsSchema = "zeel" | "diplom";
@@ -50,6 +51,7 @@ type DiplomActorRow = {
 
 type ZeelJobRow = {
   id: number;
+  created_by: number;
   title: string;
   company_name: string;
   location: string;
@@ -143,23 +145,33 @@ function decodeDiplomCategory(category: string, fallbackCompanyName: string | nu
 async function detectJobsSchema(db: Pool): Promise<JobsSchemaInfo> {
   const preferredDatabase = process.env.JOBS_DATABASE?.trim();
 
+  const [currentRows] = (await db.query("SELECT DATABASE() AS db_name")) as [CurrentDbRow[], unknown];
+  const currentDatabase = currentRows[0]?.db_name;
+
+  if (
+    global.jobsSchemaCache &&
+    currentDatabase &&
+    global.jobsSchemaCache.databaseName !== currentDatabase
+  ) {
+    global.jobsSchemaCache = undefined;
+  }
+
   if (global.jobsSchemaCache) {
     if (!preferredDatabase || preferredDatabase === global.jobsSchemaCache.databaseName) {
       return global.jobsSchemaCache;
     }
   }
 
-  const [currentRows] = (await db.query("SELECT DATABASE() AS db_name")) as [CurrentDbRow[], unknown];
-  const currentDatabase = currentRows[0]?.db_name;
-
+  /**
+   * Эхлээд холболтын default DB (ихэвчлэн MYSQL_DATABASE) — өгөгдөл энд байна.
+   * JOBS_DATABASE-ийг түрүүлж тавих нь хоосон job_posts-той өөр schema руу уншуулах алдаатай.
+   */
   const candidates: string[] = [];
-
-  if (preferredDatabase) {
-    candidates.push(preferredDatabase);
-  }
-
-  if (currentDatabase && !candidates.includes(currentDatabase)) {
+  if (currentDatabase) {
     candidates.push(currentDatabase);
+  }
+  if (preferredDatabase && !candidates.includes(preferredDatabase)) {
+    candidates.push(preferredDatabase);
   }
 
   for (const databaseName of candidates) {
@@ -276,10 +288,11 @@ export async function listJobs(): Promise<StoredJob[]> {
     const jobsTable = qualifiedTable(info.databaseName, "job_posts");
     const usersTable = qualifiedTable(info.databaseName, "users");
 
-    const [rows] = (await db.query(
+  const [rows] = (await db.query(
       `
         SELECT
           j.id,
+          j.created_by,
           j.title,
           j.company_name,
           j.location,
@@ -304,6 +317,7 @@ export async function listJobs(): Promise<StoredJob[]> {
       description: row.description,
       createdAt: toIsoString(row.created_at),
       createdByName: row.created_by_name,
+      createdByUserId: row.created_by,
     }));
   }
 
@@ -340,16 +354,37 @@ export async function listJobs(): Promise<StoredJob[]> {
       description: row.description,
       createdAt: toIsoString(row.createdAt),
       createdByName: row.created_by_name,
+      createdByUserId: null,
     };
   });
 }
 
-export async function createJob(input: JobPayload) {
+export async function getJobOwnerUserId(jobId: string) {
+  const db = getDb();
+  const info = await detectJobsSchema(db);
+
+  if (info.schema !== "zeel") {
+    return null;
+  }
+
+  const jobsTable = qualifiedTable(info.databaseName, "job_posts");
+  const [rows] = (await db.execute(`SELECT created_by FROM ${jobsTable} WHERE id = ? LIMIT 1`, [jobId])) as [
+    { created_by: number }[],
+    unknown,
+  ];
+
+  return rows[0]?.created_by ?? null;
+}
+
+export async function createJob(input: JobPayload, opts?: { createdByUserId?: number }) {
   const db = getDb();
   const info = await detectJobsSchema(db);
 
   if (info.schema === "zeel") {
-    const actorId = await resolveZeelActorId(db, info.databaseName);
+    const actorId =
+      typeof opts?.createdByUserId === "number" && Number.isFinite(opts.createdByUserId)
+        ? opts.createdByUserId
+        : await resolveZeelActorId(db, info.databaseName);
     const jobsTable = qualifiedTable(info.databaseName, "job_posts");
 
     await db.execute(

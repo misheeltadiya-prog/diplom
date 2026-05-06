@@ -23,6 +23,7 @@ export type JobRecord = {
   description: string;
   createdAt: string;
   createdByName: string | null;
+  createdByUserId: number | null;
 };
 
 type EmployeeRow = {
@@ -81,7 +82,8 @@ export async function getEmployees() {
 export async function getJobPosts() {
   try {
     return await listJobs();
-  } catch {
+  } catch (error) {
+    console.error("[getJobPosts] listJobs failed:", error);
     return [];
   }
 }

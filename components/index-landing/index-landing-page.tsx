@@ -1,8 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { SessionUser } from "@/lib/auth";
 import { landingCategories, type LandingCategoryKey } from "./data";
+import { FreelancerPublishSheet } from "./freelancer-publish-sheet";
 import { JobsListSection } from "./jobs-list-section";
 import { LeadModal } from "./lead-modal";
 import { NavBar } from "./nav-bar";
@@ -12,8 +14,15 @@ import styles from "./index-landing.module.css";
 
 const FAVORITE_JOBS_STORAGE_KEY = "cwork-landing-favorite-job-ids";
 
-export function IndexLandingPage() {
+type IndexLandingPageProps = {
+  currentUser?: SessionUser | null;
+};
+
+export function IndexLandingPage({ currentUser = null }: IndexLandingPageProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const mineOnly = searchParams.get("mine") === "1";
+  const appliedJobsOnly = searchParams.get("applied") === "1";
   const [modalMode, setModalMode] = useState<"hire" | "join" | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -22,6 +31,7 @@ export function IndexLandingPage() {
     LandingCategoryKey | "all"
   >("all");
   const [showPostJobComposer, setShowPostJobComposer] = useState(false);
+  const [showFreelancerPublish, setShowFreelancerPublish] = useState(false);
   const [visibleJobsCount, setVisibleJobsCount] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const jobsComposerRef = useRef<HTMLDivElement | null>(null);
@@ -39,7 +49,7 @@ export function IndexLandingPage() {
 
   useEffect(() => {
     const hash = window.location.hash;
-    if (hash === "#jobs-content" || hash === "#jobs") {
+    if (hash === "#jobs-content" || hash === "#jobs" || searchParams.get("applied") === "1") {
       const id = window.setTimeout(() => {
         const el =
           document.getElementById("jobs-content") ??
@@ -49,18 +59,43 @@ export function IndexLandingPage() {
       return () => window.clearTimeout(id);
     }
     return undefined;
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const roleMismatch = params.get("loginRoleMismatch");
+    if (roleMismatch === "company") {
+      showToast(
+        "Таны энэ и-мэйл company бүртгэл биш. Ажлын зар оруулахын тулд /register?role=company-оор шинээр бүртгүүлээд тэр дансаар нэвтэрнэ үү.",
+      );
+      params.delete("loginRoleMismatch");
+      const rest = params.toString();
+      const path = `${window.location.pathname}${rest ? `?${rest}` : ""}${window.location.hash}`;
+      window.history.replaceState({}, "", path);
+      return;
+    }
+    if (roleMismatch === "freelancer") {
+      showToast(
+        "Таны энэ и-мэйл freelancer бүртгэл биш. /register?role=freelancer-оор шинээр бүртгүүлээд нэвтэрнэ үү.",
+      );
+      params.delete("loginRoleMismatch");
+      const rest = params.toString();
+      const path = `${window.location.pathname}${rest ? `?${rest}` : ""}${window.location.hash}`;
+      window.history.replaceState({}, "", path);
+      return;
+    }
     if (params.get("post") === "1") {
-      setShowPostJobComposer(true);
+      if (currentUser?.role === "freelancer") {
+        setShowFreelancerPublish(true);
+      } else {
+        setShowPostJobComposer(true);
+      }
       params.delete("post");
       const rest = params.toString();
       const path = `${window.location.pathname}${rest ? `?${rest}` : ""}${window.location.hash}`;
       window.history.replaceState({}, "", path);
     }
-  }, []);
+  }, [currentUser?.role]);
 
   useEffect(() => {
     try {
@@ -203,6 +238,7 @@ export function IndexLandingPage() {
   return (
     <div className={styles.page}>
       <NavBar
+        currentUser={currentUser}
         favoritesViewActive={favoritesOnly}
         onAbout={() => {
           document
@@ -220,25 +256,37 @@ export function IndexLandingPage() {
         onFreelancer={() => {
           router.push("/freelancers");
         }}
-        onPostJob={() => {
-          setShowPostJobComposer(true);
-        }}
         onSavedJobsClick={handleSavedJobsNav}
         savedJobCount={favoriteJobIds.length}
         scrolled={isScrolled}
       />
 
       <JobsListSection
+        appliedJobsOnly={appliedJobsOnly}
         composerRef={jobsComposerRef}
+        currentUser={currentUser}
         favoriteJobIds={favoriteJobIds}
         favoritesOnly={favoritesOnly}
-        onToast={showToast}
+        mineOnly={mineOnly}
         onComposerClose={() => setShowPostJobComposer(false)}
+        onOpenFreelancerPublish={() => setShowFreelancerPublish(true)}
+        onOpenJobComposer={() => setShowPostJobComposer(true)}
+        onToast={showToast}
         onToggleFavorite={toggleFavoriteJob}
         onVisibleCountChange={setVisibleJobsCount}
         searchValue={searchValue}
         selectedCategory={selectedCategory}
         showComposer={showPostJobComposer}
+        onClearLandingFilters={() => {
+          setSelectedCategory("all");
+          setSearchValue("");
+        }}
+      />
+      <FreelancerPublishSheet
+        currentUser={currentUser}
+        onClose={() => setShowFreelancerPublish(false)}
+        onSaved={() => router.refresh()}
+        open={showFreelancerPublish}
       />
       <SiteFooter />
       <LeadModal

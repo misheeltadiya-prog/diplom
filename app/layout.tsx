@@ -2,8 +2,20 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "C-Work",
-  description: "Mongolian freelance platform landing page",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL?.trim() || "http://localhost:3000"),
+  title: {
+    default: "C-Work — Freelance & ажлын зар",
+    template: "%s · C-Work",
+  },
+  description:
+    "Freelancer, компани, ажлын зар. Профайл, өргөдөл, санал — Монголын freelance платформ.",
+  openGraph: {
+    type: "website",
+    locale: "mn_MN",
+    siteName: "C-Work",
+    title: "C-Work",
+    description: "Freelancer болон компанийн холбоос — ажлын зар, профайл.",
+  },
 };
 
 export default function RootLayout({
@@ -14,6 +26,7 @@ export default function RootLayout({
   return (
     <html lang="mn" data-scroll-behavior="smooth">
       <head>
+        <meta charSet="utf-8" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

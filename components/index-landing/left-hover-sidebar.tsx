@@ -1,7 +1,6 @@
 import styles from "./index-landing.module.css";
 
 type LeftHoverSidebarProps = {
-  onPostJob: () => void;
 };
 
 const sidebarLinks = [
@@ -11,7 +10,7 @@ const sidebarLinks = [
   { href: "#contact", label: "Contact", kicker: "Footer", short: "FT" },
 ];
 
-export function LeftHoverSidebar({ onPostJob }: LeftHoverSidebarProps) {
+export function LeftHoverSidebar(_: LeftHoverSidebarProps) {
   return (
     <aside className={styles.leftSidebar} aria-label="Page shortcuts">
       <div className={styles.leftSidebarBrand}>
@@ -34,13 +33,6 @@ export function LeftHoverSidebar({ onPostJob }: LeftHoverSidebarProps) {
         ))}
       </nav>
 
-      <button className={styles.leftSidebarAction} onClick={onPostJob} type="button">
-        <span className={styles.leftSidebarShort}>PJ</span>
-        <span className={styles.leftSidebarText}>
-          <strong>Post job</strong>
-          <small>Open composer</small>
-        </span>
-      </button>
     </aside>
   );
 }

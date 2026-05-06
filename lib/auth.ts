@@ -10,7 +10,9 @@ export type SessionUser = {
   fullName: string;
   email: string;
   phone: string | null;
+  role: "client" | "freelancer" | "company" | "admin";
   createdAt: string;
+  avatarUrl?: string | null;
 };
 
 type UserRow = {
@@ -18,7 +20,9 @@ type UserRow = {
   full_name: string;
   email: string;
   phone: string | null;
+  role?: string | null;
   created_at: Date;
+  avatar_url?: string | null;
 };
 
 function makePasswordHash(password: string) {
@@ -48,13 +52,23 @@ export function verifyPassword(password: string, storedHash: string) {
   return timingSafeEqual(candidateHash, originalBuffer);
 }
 
+function normalizeRole(raw: string | null | undefined): SessionUser["role"] {
+  if (raw === "freelancer" || raw === "admin" || raw === "company") {
+    return raw;
+  }
+  return "client";
+}
+
 function mapUser(row: UserRow): SessionUser {
+  const avatar = row.avatar_url?.trim();
   return {
     id: row.id,
     fullName: row.full_name,
     email: row.email,
     phone: row.phone,
+    role: normalizeRole(row.role),
     createdAt: row.created_at.toISOString(),
+    avatarUrl: avatar ? avatar : null,
   };
 }
 
@@ -68,19 +82,67 @@ export async function getCurrentUser() {
 
   try {
     const db = getDb();
-    const [rows] = (await db.execute(
-      `
-        SELECT u.id, u.full_name, u.email, u.phone, u.created_at
-        FROM user_sessions s
-        INNER JOIN users u ON u.id = s.user_id
-        WHERE s.session_token = ? AND s.expires_at > NOW()
-        LIMIT 1
-      `,
-      [sessionToken],
-    )) as [UserRow[], unknown];
+    let rows: UserRow[];
+    try {
+      const [r] = (await db.execute(
+        `
+          SELECT u.id, u.full_name, u.email, u.phone, u.role, u.created_at,
+                 IFNULL(u.avatar_url, '') AS avatar_url
+          FROM user_sessions s
+          INNER JOIN users u ON u.id = s.user_id
+          WHERE s.session_token = ? AND s.expires_at > NOW()
+          LIMIT 1
+        `,
+        [sessionToken],
+      )) as [UserRow[], unknown];
+      rows = r;
+    } catch (err: unknown) {
+      if ((err as { code?: string }).code !== "ER_BAD_FIELD_ERROR") {
+        throw err;
+      }
+      try {
+        const [r] = (await db.execute(
+          `
+            SELECT u.id, u.full_name, u.email, u.phone, u.role, u.created_at
+            FROM user_sessions s
+            INNER JOIN users u ON u.id = s.user_id
+            WHERE s.session_token = ? AND s.expires_at > NOW()
+            LIMIT 1
+          `,
+          [sessionToken],
+        )) as [UserRow[], unknown];
+        rows = r;
+      } catch (err2: unknown) {
+        if ((err2 as { code?: string }).code !== "ER_BAD_FIELD_ERROR") {
+          throw err2;
+        }
+        const [r] = (await db.execute(
+          `
+            SELECT u.id, u.full_name, u.email, u.phone, u.created_at
+            FROM user_sessions s
+            INNER JOIN users u ON u.id = s.user_id
+            WHERE s.session_token = ? AND s.expires_at > NOW()
+            LIMIT 1
+          `,
+          [sessionToken],
+        )) as [UserRow[], unknown];
+        rows = r;
+      }
+    }
 
     if (rows.length === 0) {
       return null;
+    }
+
+    try {
+      await db.execute(
+        `UPDATE user_sessions
+         SET expires_at = DATE_ADD(UTC_TIMESTAMP(), INTERVAL ? DAY)
+         WHERE session_token = ? AND expires_at > UTC_TIMESTAMP()`,
+        [SESSION_DAYS, sessionToken],
+      );
+    } catch {
+      /* session slide optional */
     }
 
     return mapUser(rows[0]);

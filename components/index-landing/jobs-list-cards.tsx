@@ -1,73 +1,309 @@
 "use client";
 
 import Image from "next/image";
-import { landingCategories, type LandingCategory } from "./data";
-import { type DisplayJob, type JobBoardStat, type JobBoardTab, type JobForm } from "./jobs-types";
-import { avatarToneClasses, companyLogoUrl, findCompanyByName } from "./companies-directory";
+import { useEffect, useState } from "react";
+import type { SessionUser } from "@/lib/auth";
+import { landingCategories } from "./data";
+import { type DisplayJob, type JobForm, type JobRecord } from "./jobs-types";
+import { avatarToneClasses, companyInitials, companyLogoUrl, findCompanyByName } from "./companies-directory";
 import styles from "./index-landing.module.css";
 
-const categoryMap = new Map(landingCategories.map((category) => [category.key, category]));
+const categoryMap = new Map(landingCategories.map((c) => [c.key, c]));
+
+type ApplyModalProps = {
+  job: DisplayJob;
+  currentUser?: SessionUser | null;
+  onClose: () => void;
+  onSuccess: () => void;
+};
+
+function ApplyModal({ job, currentUser = null, onClose, onSuccess }: ApplyModalProps) {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [coverNote, setCoverNote] = useState("");
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (currentUser) {
+      setFullName(currentUser.fullName ?? "");
+      setEmail(currentUser.email ?? "");
+      setPhone(currentUser.phone?.trim() ?? "");
+    } else {
+      setFullName("");
+      setEmail("");
+      setPhone("");
+    }
+    setCoverNote("");
+    setCvFile(null);
+    setError(null);
+  }, [job.id, currentUser]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      let cvFilePath = "";
+      if (cvFile) {
+        const fd = new FormData();
+        fd.append("file", cvFile);
+        const up = await fetch("/api/uploads/cv", { method: "POST", body: fd });
+        const upJson = (await up.json()) as { ok?: boolean; cvFilePath?: string; error?: string };
+        if (!up.ok || !upJson.cvFilePath) {
+          setError(upJson.error ?? "CV upload amjiltgui.");
+          setLoading(false);
+          return;
+        }
+        cvFilePath = upJson.cvFilePath;
+      }
+
+      const res = await fetch(`/api/jobs/${job.id}/apply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName, email, phone, coverNote, cvFilePath }),
+      });
+
+      const json = (await res.json()) as { ok?: boolean; error?: string };
+
+      if (!res.ok || !json.ok) {
+        setError(json.error ?? "Aldaa garlaa.");
+        setLoading(false);
+        return;
+      }
+
+      onSuccess();
+    } catch {
+      setError("Servertei holbogdohod aldaa garlaa.");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className={styles.applyOverlay} role="dialog" aria-modal="true">
+      <div className={styles.applyPanel}>
+        <button aria-label="Хаах" className={styles.applyCloseBtn} onClick={onClose} type="button">
+          ×
+        </button>
+
+        <div className={styles.applyHeader}>
+          <span className={styles.applyEyebrow}>Өргөдөл гаргах</span>
+          <h2 className={styles.applyTitle}>{job.title}</h2>
+          <p className={styles.applyCompany}>
+            {job.companyName} · {job.location}
+          </p>
+          <p className={styles.applyHint}>
+            Илгээсний дараа зар оруулсан компанид мэдэгдэл очно. Та профайлын &quot;Мэдэгдэл&quot;-ээс шалгана уу.
+          </p>
+        </div>
+
+        <form className={styles.applyForm} noValidate onSubmit={handleSubmit}>
+          <label className={styles.applyField}>
+            <span className={styles.applyFieldLabel}>Бүтэн нэр</span>
+            <input
+              autoComplete="name"
+              className={styles.applyInput}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Овог Нэр"
+              required
+              type="text"
+              value={fullName}
+            />
+          </label>
+
+          <label className={styles.applyField}>
+            <span className={styles.applyFieldLabel}>И-мэйл</span>
+            <input
+              autoComplete="email"
+              className={styles.applyInput}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="name@example.com"
+              required
+              type="email"
+              value={email}
+            />
+          </label>
+
+          <label className={styles.applyField}>
+            <span className={styles.applyFieldLabel}>Утасны дугаар</span>
+            <input
+              autoComplete="tel"
+              className={styles.applyInput}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="99001122"
+              required
+              type="tel"
+              value={phone}
+            />
+          </label>
+
+          <label className={styles.applyField}>
+            <span className={styles.applyFieldLabel}>Товч танилцуулга</span>
+            <textarea
+              className={styles.applyTextarea}
+              onChange={(e) => setCoverNote(e.target.value)}
+              placeholder="Яагаад энэ ажилд тохирохоо бичнэ үү..."
+              rows={4}
+              value={coverNote}
+            />
+          </label>
+
+          <label className={styles.applyField}>
+            <span className={styles.applyFieldLabel}>CV файл</span>
+            <input
+              accept=".pdf,.doc,.docx,application/pdf"
+              className={styles.applyInput}
+              onChange={(e) => setCvFile(e.target.files?.[0] ?? null)}
+              type="file"
+            />
+          </label>
+
+          {error ? (
+            <p className={styles.applyError} role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          <button className={styles.applySubmitBtn} disabled={loading} type="submit">
+            {loading ? "Илгээж байна..." : "Өргөдөл илгээх"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+type JobDetailModalProps = {
+  canManage: boolean;
+  job: DisplayJob;
+  applied: boolean;
+  applicationStatus?: "pending" | "accepted" | "rejected";
+  onApplyClick: () => void;
+  onClose: () => void;
+  onDelete: () => void;
+  onEdit: () => void;
+};
+
+function statusLabel(status: "pending" | "accepted" | "rejected") {
+  if (status === "accepted") return "Хүлээн авсан";
+  if (status === "rejected") return "Татгалзсан";
+  return "Хүлээгдэж буй";
+}
+
+function JobDetailModal({
+  canManage,
+  job,
+  applied,
+  applicationStatus,
+  onApplyClick,
+  onClose,
+  onDelete,
+  onEdit,
+}: JobDetailModalProps) {
+  const category = categoryMap.get(job.categoryKey);
+
+  return (
+    <div className={styles.applyOverlay} role="dialog" aria-modal="true">
+      <div className={`${styles.applyPanel} ${styles.jobDetailPanel}`}>
+        <button aria-label="Хаах" className={styles.applyCloseBtn} onClick={onClose} type="button">
+          ×
+        </button>
+
+        <div className={styles.applyHeader}>
+          <span className={styles.applyEyebrow}>Ажлын дэлгэрэнгүй</span>
+          <h2 className={styles.applyTitle}>{job.title}</h2>
+          <p className={styles.applyCompany}>
+            {job.companyName} · {job.location}
+          </p>
+        </div>
+
+        <div className={styles.jobDetailMetaGrid}>
+          <article className={styles.jobDetailMetaCard}>
+            <span className={styles.jobDetailMetaLabel}>Цалин</span>
+            <strong className={styles.jobDetailMetaValue}>{job.salary}</strong>
+          </article>
+          <article className={styles.jobDetailMetaCard}>
+            <span className={styles.jobDetailMetaLabel}>Төрөл</span>
+            <strong className={styles.jobDetailMetaValue}>{job.employmentType}</strong>
+          </article>
+          <article className={styles.jobDetailMetaCard}>
+            <span className={styles.jobDetailMetaLabel}>Ангилал</span>
+            <strong className={styles.jobDetailMetaValue}>{category?.name ?? job.categoryKey}</strong>
+          </article>
+          <article className={styles.jobDetailMetaCard}>
+            <span className={styles.jobDetailMetaLabel}>Нийтэлсэн</span>
+            <strong className={styles.jobDetailMetaValue}>{job.createdByName || job.companyName}</strong>
+          </article>
+        </div>
+
+        <section className={styles.jobDetailSection}>
+          <h3 className={styles.jobDetailSectionTitle}>Ажлын тайлбар</h3>
+          <p className={styles.jobDetailDescription}>{job.description}</p>
+        </section>
+
+        <section className={styles.jobDetailSection}>
+          <h3 className={styles.jobDetailSectionTitle}>Чиглэл ба ур чадвар</h3>
+          <div className={styles.jobDetailTagList}>
+            {job.tags.map((tag) => (
+              <span className={styles.jobCardNewTag} key={tag}>
+                {tag}
+              </span>
+            ))}
+          </div>
+        </section>
+
+        <div className={styles.jobDetailActions}>
+          {canManage ? (
+            <>
+              <button className={styles.jobDetailSecondaryBtn} onClick={onEdit} type="button">
+                Засах
+              </button>
+              <button className={styles.jobDetailDangerBtn} onClick={onDelete} type="button">
+                Устгах
+              </button>
+            </>
+          ) : (
+            <button className={styles.jobDetailSecondaryBtn} onClick={onClose} type="button">
+              Хаах
+            </button>
+          )}
+          <button className={styles.applySubmitBtn} disabled={job.source !== "database"} onClick={onApplyClick} type="button">
+            {applied ? "Өргөдөл илгээсэн ✓" : "Өргөдөл илгээх"}
+          </button>
+          {applicationStatus ? (
+            <p className={styles.applyHint} style={{ marginTop: "0.75rem", textAlign: "center" }}>
+              Таны өргөдлийн төлөв: <strong>{statusLabel(applicationStatus)}</strong>
+            </p>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 type JobCardProps = {
+  currentUser?: SessionUser | null;
   job: DisplayJob;
   isEditing: boolean;
   favoriteJobIds: string[];
   editJob: JobForm;
   submitting: boolean;
+  applicationStatus?: "pending" | "accepted" | "rejected";
+  onDeleteJob: (jobId: string) => void;
   onToggleFavorite: (jobId: string) => void;
   onEditFieldChange: (update: JobForm) => void;
   onSaveEdit: (jobId: string) => void;
+  onStartEdit: (job: JobRecord) => void;
   onCancelEdit: () => void;
-  onApplyClick: (job: DisplayJob) => void;
+  onToast: (msg: string) => void;
 };
-
-const tabLabels: Array<{ key: JobBoardTab; label: string; fallback: string }> = [
-  { key: "all", label: "Бүх ажлууд", fallback: "500+" },
-  { key: "remote", label: "Remote ажлууд", fallback: "200+" },
-  { key: "full-time", label: "Бүтэн цагийн", fallback: "300+" },
-  { key: "part-time", label: "Цагийн ажил", fallback: "120+" },
-];
-
-function BriefcaseIcon() {
-  return (
-    <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-      <path d="M9 7V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M5 7h14v11.5H5V7Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.8" />
-      <path d="M5 11.5h14" stroke="currentColor" strokeWidth="1.8" />
-    </svg>
-  );
-}
-
-function OfficeIcon() {
-  return (
-    <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-      <path d="M7 20V5.5h10V20" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.8" />
-      <path d="M10 9h1.5M10 12.5h1.5M10 16h1.5M14 9h1.5M14 12.5h1.5M14 16h1.5M5 20h14" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-    </svg>
-  );
-}
-
-function UsersIcon() {
-  return (
-    <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-      <path d="M9.5 11.2a3.3 3.3 0 1 0 0-6.6 3.3 3.3 0 0 0 0 6.6ZM3.8 19.4c.5-3.2 2.7-5.1 5.7-5.1s5.2 1.9 5.7 5.1" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-      <path d="M16.1 11.5a2.7 2.7 0 1 0 0-5.4M16.8 14.4c2 .5 3.1 2.1 3.4 4.5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-    </svg>
-  );
-}
-
-function ScheduleIcon() {
-  return (
-    <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="8.25" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M12 8.25v4.5l3 1.75" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-    </svg>
-  );
-}
 
 function LocationIcon() {
   return (
-    <svg aria-hidden="true" fill="none" viewBox="0 0 24 24">
+    <svg aria-hidden="true" fill="none" height="14" viewBox="0 0 24 24" width="14">
       <path
         d="M12 20s6-4.5 6-9a6 6 0 1 0-12 0c0 4.5 6 9 6 9Z"
         stroke="currentColor"
@@ -80,162 +316,64 @@ function LocationIcon() {
   );
 }
 
-function formatRelativeTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Шинэ";
-
-  const diffMs = Date.now() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffMins < 2) return "Дөнгөж нийтлэгдсэн";
-  if (diffMins < 60) return `${diffMins} мин өмнө`;
-  if (diffHours < 24) return `${diffHours} цаг өмнө`;
-  if (diffDays < 7) return `${diffDays} өдөр өмнө`;
-  return new Intl.DateTimeFormat("mn-MN", { month: "short", day: "numeric" }).format(date);
-}
-
-function isNewJob(source: string, createdAt: string) {
-  if (source !== "database") return false;
-  const date = new Date(createdAt);
-  if (Number.isNaN(date.getTime())) return false;
-  return Date.now() - date.getTime() < 6 * 60 * 60 * 1000;
-}
-
-function getEmploymentTypeBadgeClass(type: string) {
-  const normalized = type.toLowerCase();
-  if (normalized.includes("remote")) return styles.badgeRemote;
-  if (normalized.includes("бүтэн") || normalized.includes("full")) return styles.badgeFullTime;
-  if (normalized.includes("цагийн") || normalized.includes("part")) return styles.badgePartTime;
-  if (normalized.includes("гэрээ") || normalized.includes("contract")) return styles.badgeContract;
-  return styles.badgeDefault;
-}
-
-function formatEmploymentTypeLabel(value: string) {
-  const normalized = value.toLowerCase();
-
-  if (normalized.includes("remote")) {
-    return "Remote";
-  }
-
-  if (normalized.includes("бүтэн") || normalized.includes("full")) {
-    return "Бүтэн цагийн";
-  }
-
-  if (normalized.includes("цагийн") || normalized.includes("part") || normalized.includes("хагас")) {
-    return "Цагийн ажил";
-  }
-
-  if (normalized.includes("гэрээ") || normalized.includes("contract")) {
-    return "Гэрээт";
-  }
-
-  return value;
-}
-
-function getAccentClassName(category: LandingCategory) {
-  return `${category.accent[0].toUpperCase()}${category.accent.slice(1)}`;
-}
-
-function SkeletonCard() {
-  return (
-    <div className={styles.jobCard}>
-      <div className={styles.jobCardInner}>
-        <div className={styles.jobCardHead}>
-          <div className={styles.jobCardCompany}>
-            <div className={`${styles.skeleton} ${styles.skeletonAvatar}`} />
-            <div>
-              <div className={`${styles.skeleton} ${styles.skeletonSubtitle}`} style={{ marginBottom: 7 }} />
-              <div className={`${styles.skeleton} ${styles.skeletonBadge}`} />
-            </div>
-          </div>
-        </div>
-        <div className={`${styles.skeleton} ${styles.skeletonTitle}`} />
-        <div className={styles.jobMetaRow}>
-          <div className={`${styles.skeleton} ${styles.skeletonPill}`} />
-          <div className={`${styles.skeleton} ${styles.skeletonPill}`} />
-        </div>
-        <div className={`${styles.skeleton} ${styles.skeletonDesc}`} />
-      </div>
-    </div>
-  );
-}
-
-function TabButton({
-  active,
-  count,
-  fallback,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  count: number;
-  fallback: string;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button className={`${styles.cleanJobTab} ${active ? styles.cleanJobTabActive : ""}`} onClick={onClick} type="button">
-      <span>{label}</span>
-      <b>{count > 0 ? count : fallback}</b>
-    </button>
-  );
+function isNew(createdAt: string) {
+  return Date.now() - new Date(createdAt).getTime() < 3 * 24 * 60 * 60 * 1000;
 }
 
 export function JobCard({
+  currentUser = null,
   job,
   isEditing,
   favoriteJobIds,
   editJob,
   submitting,
+  applicationStatus,
+  onDeleteJob,
   onToggleFavorite,
   onEditFieldChange,
   onSaveEdit,
+  onStartEdit,
   onCancelEdit,
-  onApplyClick,
+  onToast,
 }: JobCardProps) {
-  const category = categoryMap.get(job.categoryKey) ?? landingCategories[0];
-  const accent = getAccentClassName(category);
+  const [showDetails, setShowDetails] = useState(false);
+  const [showApply, setShowApply] = useState(false);
+  const [localApplied, setLocalApplied] = useState(false);
+  const applied = applicationStatus !== undefined || localApplied;
+
   const company = findCompanyByName(job.companyName);
   const toneKey = avatarToneClasses[(Math.abs(job.companyName.length) + job.id.length) % avatarToneClasses.length];
   const toneClass = styles[toneKey];
+  const jobIsNew = isNew(job.createdAt);
+  const canManage =
+    job.source === "database" &&
+    (currentUser?.role === "admin" ||
+      (typeof currentUser?.id === "number" && job.createdByUserId === currentUser.id));
 
-  return (
-    <article className={`${styles.jobCard} ${styles[`jobCard${accent}`]}`}>
-      {isEditing ? (
+  if (isEditing) {
+    return (
+      <article className={styles.jobCardNew}>
         <div className={styles.jobsEditWrap}>
           <div className={styles.jobsFormRow}>
+            <input onChange={(e) => onEditFieldChange({ ...editJob, title: e.target.value })} required value={editJob.title} />
             <input
-              onChange={(event) => onEditFieldChange({ ...editJob, title: event.target.value })}
-              required
-              value={editJob.title}
-            />
-            <input
-              onChange={(event) => onEditFieldChange({ ...editJob, companyName: event.target.value })}
+              onChange={(e) => onEditFieldChange({ ...editJob, companyName: e.target.value })}
               required
               value={editJob.companyName}
             />
           </div>
           <div className={styles.jobsFormRow}>
             <input
-              onChange={(event) => onEditFieldChange({ ...editJob, location: event.target.value })}
+              onChange={(e) => onEditFieldChange({ ...editJob, location: e.target.value })}
               required
               value={editJob.location}
             />
-            <input
-              onChange={(event) => onEditFieldChange({ ...editJob, salary: event.target.value })}
-              required
-              value={editJob.salary}
-            />
+            <input onChange={(e) => onEditFieldChange({ ...editJob, salary: e.target.value })} required value={editJob.salary} />
           </div>
           <div className={styles.jobsFormRow}>
-            <select
-              onChange={(event) => onEditFieldChange({ ...editJob, employmentType: event.target.value })}
-              value={editJob.employmentType}
-            >
+            <select onChange={(e) => onEditFieldChange({ ...editJob, employmentType: e.target.value })} value={editJob.employmentType}>
               <option>Бүтэн цаг</option>
-              <option>Цагийн ажил</option>
+              <option>Хагас цаг</option>
               <option>Гэрээт</option>
               <option>Remote</option>
             </select>
@@ -248,198 +386,201 @@ export function JobCard({
               </button>
             </div>
           </div>
-          <textarea
-            onChange={(event) => onEditFieldChange({ ...editJob, description: event.target.value })}
-            required
-            rows={4}
-            value={editJob.description}
-          />
+          <textarea onChange={(e) => onEditFieldChange({ ...editJob, description: e.target.value })} required rows={4} value={editJob.description} />
         </div>
-      ) : (
-        <div className={styles.jobCardInner}>
-          <div className={styles.jobCardHead}>
-            <div className={styles.jobCardCompany}>
-              <span className={`${styles.jobCompanyAvatar} ${toneClass || ""}`}>
-                {company ? (
-                  <img
-                    alt={`${job.companyName} logo`}
-                    className={styles.jobCompanyAvatarImage}
-                    onError={(event) => {
-                      event.currentTarget.style.display = "none";
-                    }}
-                    src={companyLogoUrl(company.domain)}
-                  />
-                ) : (
-                  <span>{job.companyName.slice(0, 1).toUpperCase()}</span>
-                )}
-              </span>
-              <div className={styles.jobCardCompanyInfo}>
-                <p className={styles.jobCompanyName}>{job.companyName}</p>
-                <div className={styles.jobBadgeRow}>
-                  <span className={`${styles.jobEmploymentBadge} ${getEmploymentTypeBadgeClass(job.employmentType)}`}>
-                    {formatEmploymentTypeLabel(job.employmentType)}
-                  </span>
-                  {job.level !== "Mid" ? <span className={styles.jobLevelBadge}>{job.level}</span> : null}
-                  {isNewJob(job.source, job.createdAt) ? <span className={styles.jobNewBadge}>Шинэ</span> : null}
-                </div>
+      </article>
+    );
+  }
+
+  return (
+    <>
+      <article className={styles.jobCardNew}>
+        <div className={styles.jobCardNewTop}>
+          <div className={styles.jobCardNewLogoWrap}>
+            <span className={`${styles.jobCompanyAvatar} ${toneClass || ""}`}>
+              {company ? (
+                <img
+                  alt={`${job.companyName} logo`}
+                  className={styles.jobCompanyAvatarImage}
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                  src={companyLogoUrl(company.domain)}
+                />
+              ) : (
+                <span className={styles.jobCompanyAvatarInitials}>{companyInitials(job.companyName)}</span>
+              )}
+            </span>
+            <div className={styles.jobCardNewCompanyInfo}>
+              <span className={styles.jobCardNewCompanyName}>{job.companyName}</span>
+              <div className={styles.jobCardNewBadges}>
+                <span className={styles.jobCardNewBadgeType}>{job.employmentType}</span>
+                {jobIsNew ? <span className={styles.jobCardNewBadgeNew}>ШИНЭ</span> : null}
               </div>
             </div>
-            <button
-              aria-label="Save job"
-              aria-pressed={favoriteJobIds.includes(job.id)}
-              className={`${styles.jobFavorite} ${favoriteJobIds.includes(job.id) ? styles.jobFavoriteOn : ""}`}
-              onClick={() => onToggleFavorite(job.id)}
-              type="button"
-            >
-              <Image
-                alt=""
-                aria-hidden
-                className={styles.jobFavoriteIcon}
-                height={48}
-                src={favoriteJobIds.includes(job.id) ? "/heart-favorite-on.svg" : "/heart-favorite.svg"}
-                width={48}
-              />
-            </button>
           </div>
-
-          <h3 className={styles.jobCardTitle}>{job.title}</h3>
-
-          <div className={styles.jobMetaRow}>
-            <div className={styles.jobMetaLocation}>
-              <span className={styles.jobMetaIcon}><LocationIcon /></span>
-              {job.location}
-            </div>
-            <div className={styles.jobMetaSchedule}>
-              <span className={styles.jobMetaIcon}><ScheduleIcon /></span>
-              {formatEmploymentTypeLabel(job.employmentType)}
-            </div>
-          </div>
-
-          <p className={styles.jobDescription}>{job.description}</p>
-
-          <div className={styles.jobCardFoot}>
-            <div className={styles.marketSkillRow}>
-              {job.tags.map((tag) => (
-                <span className={styles.marketSkill} key={tag}>{tag}</span>
-              ))}
-            </div>
-            <div className={styles.jobCardActions}>
-              <span className={styles.jobSalaryPill}>{job.salary}</span>
-              <span className={styles.jobApplicantCount}>
-                <UsersIcon />
-                {job.applicantCount} анкет
-              </span>
-              <button className={styles.jobApplyButton} onClick={() => onApplyClick(job)} type="button">
-                Дэлгэрэнгүй
-              </button>
-            </div>
-          </div>
-          <div className={styles.jobPostedTime}>{formatRelativeTime(job.createdAt)}</div>
+          <button
+            aria-pressed={favoriteJobIds.includes(job.id)}
+            className={`${styles.jobFavorite} ${favoriteJobIds.includes(job.id) ? styles.jobFavoriteOn : ""}`}
+            onClick={() => onToggleFavorite(job.id)}
+            type="button"
+          >
+            <Image
+              alt=""
+              aria-hidden
+              className={styles.jobFavoriteIcon}
+              height={48}
+              src={favoriteJobIds.includes(job.id) ? "/heart-favorite-on.svg" : "/heart-favorite.svg"}
+              width={48}
+            />
+          </button>
         </div>
-      )}
-    </article>
+
+        <h3 className={styles.jobCardNewTitle}>{job.title}</h3>
+
+        <div className={styles.jobCardNewLocation}>
+          <LocationIcon />
+          <span>{job.location}</span>
+          {job.location.toLowerCase() !== "remote" ? (
+            <>
+              <span className={styles.jobCardNewLocationDot}>·</span>
+              <span>Remote</span>
+            </>
+          ) : null}
+        </div>
+
+        <p className={styles.jobCardNewDesc}>{job.description}</p>
+
+        <div className={styles.jobCardNewFooter}>
+          <div className={styles.jobCardNewSalary}>{job.salary}</div>
+          <div className={styles.jobCardNewApplicants}>
+            <svg aria-hidden="true" fill="none" height="14" viewBox="0 0 24 24" width="14">
+              <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="1.8" />
+              <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+            </svg>
+            <span>{job.applicantCount} анкет</span>
+          </div>
+          <button className={styles.jobCardNewApplyBtn} onClick={() => setShowDetails(true)} type="button">
+            Дэлгэрэнгүй
+          </button>
+        </div>
+      </article>
+
+      {showDetails ? (
+        <JobDetailModal
+          applied={applied}
+          applicationStatus={applicationStatus}
+          canManage={canManage}
+          job={job}
+          onApplyClick={() => {
+            if (job.source !== "database") {
+              onToast("Demo Ð·Ð°Ñ€ Ð´ÑÑÑ€ ÑˆÑƒÑƒÐ´ Ó©Ñ€Ð³Ó©Ð´Ó©Ð» Ð¸Ð»Ð³ÑÑÑ…Ð³Ò¯Ð¹. Database Ð·Ð°Ñ€Ñ‹Ð³ ÑÐ¾Ð½Ð³Ð¾Ð½Ð¾ ÑƒÑƒ.");
+              return;
+            }
+            setShowDetails(false);
+            setShowApply(true);
+          }}
+          onClose={() => setShowDetails(false)}
+          onDelete={() => {
+            setShowDetails(false);
+            onDeleteJob(job.id);
+          }}
+          onEdit={() => {
+            setShowDetails(false);
+            onStartEdit(job);
+          }}
+        />
+      ) : null}
+
+      {showApply && job.source === "database" ? (
+        <ApplyModal
+          currentUser={currentUser}
+          job={job}
+          onClose={() => setShowApply(false)}
+          onSuccess={() => {
+            setShowApply(false);
+            setLocalApplied(true);
+            onToast(
+              `"${job.title}" ажилд өргөдөл илгээгдлээ. ${job.companyName} компанид мэдэгдэл очсон. Хариу ирэхэд мэдэгдэл хүлээнэ үү.`,
+            );
+          }}
+        />
+      ) : null}
+    </>
   );
 }
 
 type JobsListCardsProps = {
-  activeTab: JobBoardTab;
+  currentUser?: SessionUser | null;
   loading: boolean;
   filteredJobs: DisplayJob[];
   paginatedJobs: DisplayJob[];
   currentPage: number;
   totalPages: number;
-  jobBoardStats: JobBoardStat[];
-  tabCounts: Record<JobBoardTab, number>;
   favoriteJobIds: string[];
   editingId: string | null;
   editJob: JobForm;
   submitting: boolean;
+  applicationStatusByJobId?: Record<string, "pending" | "accepted" | "rejected">;
+  emptyHint?: string;
+  onDeleteJob: (jobId: string) => void;
   onToggleFavorite: (jobId: string) => void;
-  onTabChange: (tab: JobBoardTab) => void;
   onPageChange: (page: number) => void;
   onEditFieldChange: (update: JobForm) => void;
   onSaveEdit: (jobId: string) => void;
+  onStartEdit: (job: JobRecord) => void;
   onCancelEdit: () => void;
-  onApplyClick: (job: DisplayJob) => void;
+  onToast: (msg: string) => void;
 };
 
 export function JobsListCards({
-  activeTab,
+  currentUser = null,
   loading,
   filteredJobs,
   paginatedJobs,
   currentPage,
   totalPages,
-  jobBoardStats: _jobBoardStats,
-  tabCounts,
   favoriteJobIds,
   editingId,
   editJob,
   submitting,
+  applicationStatusByJobId,
+  emptyHint,
+  onDeleteJob,
   onToggleFavorite,
-  onTabChange,
   onPageChange,
   onEditFieldChange,
   onSaveEdit,
+  onStartEdit,
   onCancelEdit,
-  onApplyClick,
+  onToast,
 }: JobsListCardsProps) {
   return (
     <div className={styles.jobsLayout}>
-      <div className={styles.cleanJobsToolbar}>
-        <div className={styles.cleanJobTabs} role="tablist" aria-label="Job filters">
-          {tabLabels.map((tab) => (
-            <TabButton
-              active={activeTab === tab.key}
-              count={tabCounts[tab.key]}
-              fallback={tab.fallback}
-              key={tab.key}
-              label={tab.label}
-              onClick={() => onTabChange(tab.key)}
-            />
-          ))}
-        </div>
-        <label className={styles.cleanJobsSort}>
-          <select defaultValue="new">
-            <option value="new">Шинэ эхэлсэн</option>
-            <option value="salary">Цалин өндөр</option>
-          </select>
-        </label>
-      </div>
-
       <div className={styles.jobsFeed}>
         <div className={styles.jobsList}>
-          {loading ? (
-            <>
-              <SkeletonCard />
-              <SkeletonCard />
-              <SkeletonCard />
-            </>
-          ) : null}
-
+          {loading ? <div className={styles.jobsEmpty}>Ажлын мэдээллүүдийг ачаалж байна...</div> : null}
           {!loading && filteredJobs.length === 0 ? (
-            <div className={styles.jobsEmptyState}>
-              <div className={styles.jobsEmptyIcon}>
-                <BriefcaseIcon />
-              </div>
-              <h3>Ажлын санал олдсонгүй</h3>
-              <p>Шүүлтүүрт тохирох ажлын санал байхгүй байна. Хайлтаа өөрчилж дахин үзээрэй.</p>
-            </div>
+            <div className={styles.jobsEmpty}>{emptyHint ?? "Энэ шүүлтүүрт тохирсон ажлын санал олдсонгүй."}</div>
           ) : null}
-
           {paginatedJobs.map((job) => (
             <JobCard
               key={job.id}
-              job={job}
-              isEditing={editingId === job.id}
-              favoriteJobIds={favoriteJobIds}
+              applicationStatus={applicationStatusByJobId?.[job.id]}
+              currentUser={currentUser}
               editJob={editJob}
-              submitting={submitting}
-              onToggleFavorite={onToggleFavorite}
+              favoriteJobIds={favoriteJobIds}
+              isEditing={editingId === job.id}
+              job={job}
+              onCancelEdit={onCancelEdit}
+              onDeleteJob={onDeleteJob}
               onEditFieldChange={onEditFieldChange}
               onSaveEdit={onSaveEdit}
-              onCancelEdit={onCancelEdit}
-              onApplyClick={onApplyClick}
+              onStartEdit={onStartEdit}
+              onToast={onToast}
+              onToggleFavorite={onToggleFavorite}
+              submitting={submitting}
             />
           ))}
         </div>
@@ -454,14 +595,13 @@ export function JobsListCards({
             >
               Өмнөх
             </button>
-
             <div className={styles.jobsPaginationPages}>
-              {Array.from({ length: totalPages }, (_, index) => {
-                const page = index + 1;
+              {Array.from({ length: totalPages }, (_, i) => {
+                const page = i + 1;
                 return (
                   <button
-                    key={page}
                     className={`${styles.jobsPaginationPage} ${page === currentPage ? styles.jobsPaginationPageActive : ""}`}
+                    key={page}
                     onClick={() => onPageChange(page)}
                     type="button"
                   >
@@ -470,7 +610,6 @@ export function JobsListCards({
                 );
               })}
             </div>
-
             <button
               className={styles.jobsPaginationButton}
               disabled={currentPage === totalPages}

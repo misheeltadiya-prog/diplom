@@ -10,6 +10,7 @@ export type JobRecord = {
   description: string;
   createdAt: string;
   createdByName?: string | null;
+  createdByUserId?: number | null;
 };
 
 export type DisplayJob = JobRecord & {

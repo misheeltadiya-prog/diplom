@@ -1,0 +1,20 @@
+# Жишээ deploy pipeline — үйлчилгээнд тохируулан SSH, Docker push, эсвэл PaaS CLI нэмнэ.
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deploy target (e.g. production)"
+        required: true
+        default: "production"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Add deploy steps: build image, push, restart service, run migrations on host."
+          echo "Target: ${{ github.event.inputs.environment }}"

@@ -6,20 +6,34 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:bootstrap": "node scripts/bootstrap-db.mjs"
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "db:bootstrap": "node scripts/bootstrap-db.mjs",
+    "db:role": "node scripts/apply-users-role.mjs",
+    "db:freelancer": "node scripts/ensure-freelancer-profiles.mjs",
+    "db:real-seed": "node scripts/refresh-real-seed-data.mjs",
+    "db:migrate": "node scripts/run-migrations.mjs"
   },
   "dependencies": {
     "mysql2": "latest",
     "next": "latest",
+    "nodemailer": "^6.10.0",
     "ogl": "^1.0.11",
     "react": "latest",
     "react-dom": "latest",
     "three": "^0.184.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@tailwindcss/postcss": "^4.2.4",
     "@types/node": "latest",
+    "@types/nodemailer": "^6.4.17",
     "@types/react": "latest",
     "@types/react-dom": "latest",
-    "typescript": "latest"
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.14",
+    "tailwindcss": "^4.2.4",
+    "typescript": "latest",
+    "vitest": "^3.0.0"
   }
 }

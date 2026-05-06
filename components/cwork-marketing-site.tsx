@@ -2,20 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
+import { companyLogoUrl } from "./index-landing/companies-directory";
+
+export type MarqueeCompany = { name: string; domain: string };
 import styles from "./cwork-marketing-site.module.css";
 
-type PageName = "home" | "services" | "contact";
-
-type SiteProps = {
-  page: PageName;
-};
-
-type NavProps = {
-  page: PageName;
-};
-
-type ServiceCardName = "visibility" | "hiring" | "strategy";
+type ServiceCardName = "visibility" | "hiring" | "strategy" | "growth";
 
 function IconWrap({ children }: { children: ReactNode }) {
   return <span className={styles.iconInline}>{children}</span>;
@@ -134,36 +128,134 @@ function MapPinIcon() {
   );
 }
 
-function Navbar({ page }: NavProps) {
+function BriefcaseIcon() {
   return (
-    <div className={styles.navWrap}>
-      <div className={styles.container}>
-        <nav className={styles.navBar}>
-          <Link className={styles.brand} href="/">
-            <span className={styles.brandMark}>
-              <Image alt="C-Work logo" height={24} src="/c-work-logo.svg" width={24} />
+    <svg aria-hidden="true" height="40" viewBox="0 0 24 24" width="40" fill="none">
+      <rect x="2" y="7" width="20" height="14" rx="3" stroke="currentColor" strokeWidth="2" />
+      <path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M12 12v2m-6-2v2m12-2v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SearchWorkIcon() {
+  return (
+    <svg aria-hidden="true" height="40" viewBox="0 0 24 24" width="40" fill="none">
+      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+      <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M8 11h6M11 8v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function BuildingIcon() {
+  return (
+    <svg aria-hidden="true" height="40" viewBox="0 0 24 24" width="40" fill="none">
+      <path d="M4 20h16M6 20V8l6-4 6 4v12" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M9 20v-5h6v5M9 11h2M13 11h2M9 14h2M13 14h2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+type RoleModalProps = {
+  onClose: () => void;
+};
+
+function RoleModal({ onClose }: RoleModalProps) {
+  const router = useRouter();
+
+  /** Сонгосон төрөлтэй `/login?role=…` + нэвтрэлтийн дараах шууд чиглэл (`next`). Бүртгэлийн төрөл DB-тэй таарах ёстой. */
+  function choose(role: "client" | "freelancer" | "company") {
+    onClose();
+    const nextPath =
+      role === "company"
+        ? "/jobs?post=1"
+        : role === "freelancer"
+          ? "/freelancers?publish=1"
+          : "/jobs";
+    router.push(`/login?role=${role}&next=${encodeURIComponent(nextPath)}`);
+  }
+
+  return (
+    <div className={styles.roleOverlay} role="dialog" aria-modal="true" aria-label="Үүргээ сонгоно уу">
+      <div className={styles.rolePanel}>
+        <button className={styles.roleCloseBtn} type="button" onClick={onClose} aria-label="Хаах">
+          ✕
+        </button>
+        <div className={styles.roleHeader}>
+          <span className={styles.roleEyebrow}>Get started</span>
+          <h2 className={styles.roleTitle}>Та хэн бэ?</h2>
+          <p className={styles.roleSubtitle}>
+            Картаас сонгоно уу — тухайн төрлийн нэвтрэх хуудас нээгдэнэ. И-мэйлийн бүртгэл яг энэ төрөлтэй байвал зөв чиглэл рүү орно.
+          </p>
+        </div>
+        <div className={styles.roleCards}>
+          <button
+            className={styles.roleCard}
+            type="button"
+            onClick={() => choose("client")}
+          >
+            <span className={styles.roleCardIcon}>
+              <BriefcaseIcon />
             </span>
-            <span>C-Work</span>
-          </Link>
-
-          <div className={styles.navLinks}>
-            <Link className={`${styles.navLink} ${page === "home" ? styles.navLinkActive : ""}`} href="/">
-              Work
-            </Link>
-            <Link className={`${styles.navLink} ${page === "services" ? styles.navLinkActive : ""}`} href="/services">
-              Services
-            </Link>
-            <Link className={`${styles.navLink} ${page === "contact" ? styles.navLinkActive : ""}`} href="/contact">
-              Contact
-            </Link>
-          </div>
-
-          <Link className={styles.navButton} href="/register">
-            Get started
-          </Link>
-        </nav>
+            <strong className={styles.roleCardTitle}>I'm a client</strong>
+            <span className={styles.roleCardDesc}>Hiring for a project</span>
+          </button>
+          <button
+            className={styles.roleCard}
+            type="button"
+            onClick={() => choose("freelancer")}
+          >
+            <span className={styles.roleCardIcon}>
+              <SearchWorkIcon />
+            </span>
+            <strong className={styles.roleCardTitle}>I'm a freelancer</strong>
+            <span className={styles.roleCardDesc}>Looking for work</span>
+          </button>
+          <button
+            className={styles.roleCard}
+            type="button"
+            onClick={() => choose("company")}
+          >
+            <span className={styles.roleCardIcon}>
+              <BuildingIcon />
+            </span>
+            <strong className={styles.roleCardTitle}>I'm a company</strong>
+            <span className={styles.roleCardDesc}>Post jobs &amp; hire talent</span>
+          </button>
+        </div>
       </div>
     </div>
+  );
+}
+
+function Navbar() {
+  const [showRoleModal, setShowRoleModal] = useState(false);
+
+  return (
+    <>
+      <div className={styles.navWrap}>
+        <div className={styles.container}>
+          <nav className={styles.navBar}>
+            <Link className={styles.brand} href="/">
+              <span className={styles.brandMark}>
+                <Image alt="C-Work logo" height={24} src="/c-work-logo.svg" width={24} />
+              </span>
+              <span>C-Work</span>
+            </Link>
+
+            <button
+              className={styles.navButton}
+              type="button"
+              onClick={() => setShowRoleModal(true)}
+            >
+              Get started
+            </button>
+          </nav>
+        </div>
+      </div>
+      {showRoleModal ? <RoleModal onClose={() => setShowRoleModal(false)} /> : null}
+    </>
   );
 }
 
@@ -172,18 +264,13 @@ function Footer() {
     <footer className={styles.footer}>
       <div className={`${styles.container} ${styles.footerInner}`}>
         <div className={styles.brand}>C-Work</div>
-        <div className={styles.footerLinks}>
-          <Link href="/jobs">Jobs</Link>
-          <Link href="/services">Services</Link>
-          <Link href="/contact">Contact</Link>
-        </div>
         <div className={styles.footerMeta}>(c) 2026 C-WORK. BUILT FOR FREELANCERS AND MODERN TEAMS.</div>
       </div>
     </footer>
   );
 }
 
-function HomePage() {
+function HomePage({ marqueeCompanies }: { marqueeCompanies: MarqueeCompany[] }) {
   const [activeService, setActiveService] = useState<ServiceCardName>("hiring");
 
   return (
@@ -194,10 +281,10 @@ function HomePage() {
             <BadgeCheckIcon />
             <span>Available for new projects</span>
           </div>
-          <h1 className={styles.heroTitle}>
+          <h1 className={`${styles.heroTitle} ${styles.heroLeadTitle}`}>
             Elevating Your <span className={styles.heroTitleAccent}>Freelance Presence</span>
           </h1>
-          <p className={styles.heroText}>
+          <p className={`${styles.bodyText} ${styles.heroLeadText}`}>
             C-Work is a focused platform where freelancers and employers meet around real projects, clean profiles,
             and fast hiring momentum. Discover opportunities, showcase your strengths, and move from interest to work.
           </p>
@@ -215,6 +302,13 @@ function HomePage() {
         </div>
 
         <div className={styles.heroVisual}>
+          <div className={styles.heroFrameBack}>
+            <img
+              alt="Creative planning board"
+              className={styles.heroImage}
+              src="https://images.unsplash.com/photo-1484417894907-623942c8ee29?auto=format&fit=crop&q=80&w=1200"
+            />
+          </div>
           <div className={styles.heroFrame}>
             <img
               alt="Creative workspace"
@@ -234,14 +328,25 @@ function HomePage() {
         </div>
       </div>
 
+      {marqueeCompanies.length > 0 ? (
+        <div className={`${styles.container} ${styles.companyMarquee}`}>
+          <div className={styles.marqueeViewport}>
+            <div className={styles.marqueeTrack}>
+              {[...marqueeCompanies, ...marqueeCompanies].map((company, index) => (
+                <div className={styles.marqueeItem} key={`${company.domain}-${index}`}>
+                  <img alt={`${company.name} logo`} className={styles.marqueeLogo} src={companyLogoUrl(company.domain)} />
+                  <span className={styles.marqueeName}>{company.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className={styles.contentBlock}>
         <div className={styles.container}>
           <div className={styles.blockHead}>
             <h2 className={styles.blockTitle}>Precision Services</h2>
-            <p className={styles.blockSubtitle}>
-              Focused on quality over noise, C-Work helps ambitious freelancers and growing teams move faster with
-              better digital presentation and clearer opportunity flow.
-            </p>
           </div>
 
           <div className={styles.serviceGrid}>
@@ -301,6 +406,25 @@ function HomePage() {
                 <span className={styles.serviceChip}>Research</span>
               </div>
             </button>
+
+            <button
+              aria-pressed={activeService === "growth"}
+              className={`${styles.serviceCard} ${styles.serviceCardButton} ${activeService === "growth" ? styles.serviceCardFeatured : ""}`}
+              type="button"
+              onClick={() => setActiveService("growth")}
+            >
+              <span className={styles.serviceIcon}>
+                <BrushIcon />
+              </span>
+              <h3 className={styles.serviceTitle}>Profile Growth</h3>
+              <p className={styles.serviceText}>
+                Sharper portfolio structure, stronger personal branding, and a profile flow that turns visits into leads.
+              </p>
+              <div className={styles.chipRow}>
+                <span className={styles.serviceChip}>Portfolio</span>
+                <span className={styles.serviceChip}>Personal Brand</span>
+              </div>
+            </button>
           </div>
         </div>
       </div>
@@ -351,196 +475,12 @@ function HomePage() {
   );
 }
 
-function ServicesPage() {
-  return (
-    <>
-      <header className={`${styles.container} ${styles.servicesHero}`}>
-        <div className={styles.servicesHeroInner}>
-          <span className={styles.pill}>Capabilities</span>
-          <h1 className={styles.heroTitle}>Specialized in elevating freelance experiences.</h1>
-          <p className={styles.heroText}>
-            C-Work helps brands, teams, and independent professionals stand out through clear positioning, polished UI,
-            and a practical workflow built around real hiring needs.
-          </p>
-        </div>
-      </header>
-
-      <div className={`${styles.container} ${styles.servicesGrid}`}>
-        <article className={`${styles.serviceCard} ${styles.serviceWide}`}>
-          <span className={styles.serviceIcon}>
-            <BrushIcon />
-          </span>
-          <h3 className={styles.serviceTitle}>Freelancer Experience Design</h3>
-          <p className={styles.serviceText}>
-            Clear profile structures, visible strengths, and thoughtful presentation that help skilled people convert
-            profile views into meaningful work opportunities.
-          </p>
-          <div className={styles.chipRow}>
-            <span className={styles.serviceChip}>Research</span>
-            <span className={styles.serviceChip}>Profiles</span>
-            <span className={styles.serviceChip}>Positioning</span>
-          </div>
-        </article>
-
-        <article className={`${styles.serviceCard} ${styles.serviceNarrow}`}>
-          <span className={styles.serviceIcon}>
-            <CodeIcon />
-          </span>
-          <h3 className={styles.serviceTitle}>Job Discovery</h3>
-          <p className={styles.serviceText}>
-            Responsive listings, smooth filtering, and clean browsing patterns built for fast decision-making.
-          </p>
-          <ul className={styles.serviceList}>
-            <li>
-              <CheckCircleIcon />
-              Responsive layouts
-            </li>
-            <li>
-              <CheckCircleIcon />
-              Fast search flow
-            </li>
-            <li>
-              <CheckCircleIcon />
-              Better visibility
-            </li>
-          </ul>
-        </article>
-
-        <article className={`${styles.serviceCard} ${styles.serviceNarrow}`}>
-          <span className={styles.serviceIcon}>
-            <SparklesIcon />
-          </span>
-          <h3 className={styles.serviceTitle}>Employer Presence</h3>
-          <p className={styles.serviceText}>
-            Company cards, trust signals, and hiring clarity that make roles feel credible and easier to respond to.
-          </p>
-          <div className={styles.visualBox}>
-            <img
-              alt="Employer presence"
-              className={styles.contactImage}
-              src="https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&q=80&w=900"
-            />
-          </div>
-        </article>
-
-        <article className={styles.serviceSplit}>
-          <div className={styles.serviceSplitText}>
-            <h3 className={styles.serviceTitle}>Strategy and consulting</h3>
-            <p>
-              Beyond surface-level visuals, C-Work can be positioned as a hiring-focused product that supports digital
-              growth, recruitment confidence, and long-term platform credibility.
-            </p>
-            <Link className={styles.panelButton} href="/contact">
-              Schedule a consultation
-            </Link>
-          </div>
-          <div className={styles.visualBox}>
-            <img
-              alt="Strategy workspace"
-              className={styles.contactImage}
-              src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&q=80&w=900"
-            />
-          </div>
-        </article>
-      </div>
-
-      <div className={styles.processArea}>
-        <div className={styles.container}>
-          <div className={styles.blockHead}>
-            <h2 className={styles.blockTitle}>The Creative Process</h2>
-            <p className={styles.blockSubtitle}>A systematic approach to shaping strong digital hiring experiences.</p>
-          </div>
-          <div className={styles.processGrid}>
-            {[
-              { id: "01", title: "Discovery", desc: "Understand the audience, goals, and friction points." },
-              { id: "02", title: "Ideation", desc: "Map concepts and define the best journey for users." },
-              { id: "03", title: "Design", desc: "Turn strategy into refined visual systems and flows." },
-              { id: "04", title: "Launch", desc: "Ship, test, and improve based on how people actually use it." },
-            ].map((step) => (
-              <article className={styles.processCard} key={step.id}>
-                <div className={styles.processStep}>{step.id}</div>
-                <h4>{step.title}</h4>
-                <p>{step.desc}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
-
-function ContactPage() {
-  return (
-    <div className={`${styles.container} ${styles.contactPage}`}>
-      <div className={styles.blockHead}>
-        <span className={styles.blockEyebrow}>Collaboration</span>
-        <h1 className={styles.heroTitle}>Let's work together.</h1>
-        <p className={styles.heroText}>
-          Whether you are hiring freelancers, building a stronger public-facing platform, or refining user flow, C-Work
-          can help make the experience feel clear and premium.
-        </p>
-      </div>
-
-      <div className={styles.quoteGrid}>
-        <article className={styles.quoteCard}>
-          <p className={styles.quoteText}>"C-Work helped make our hiring flow feel far more intentional and usable."</p>
-          <strong className={styles.quoteRole}>Employer team</strong>
-        </article>
-        <article className={styles.quoteCard}>
-          <p className={styles.quoteText}>"The platform feels cleaner, more premium, and easier to trust."</p>
-          <strong className={styles.quoteRole}>Freelancer user</strong>
-        </article>
-      </div>
-
-      <div className={styles.contactTwoCol}>
-        <div className={styles.contactFormCard}>
-          <form className={styles.form}>
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>Name</span>
-              <input className={styles.fieldInput} placeholder="John Doe" />
-            </label>
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>Email</span>
-              <input className={styles.fieldInput} placeholder="john@example.com" type="email" />
-            </label>
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>Project Details</span>
-              <textarea className={styles.fieldTextarea} placeholder="Tell me about your project..." />
-            </label>
-            <button className={styles.ctaButton} type="button">
-              Send Inquiry
-            </button>
-          </form>
-        </div>
-
-        <aside className={styles.contactAside}>
-          <div className={styles.miniCard}>
-            <h3>Direct contact</h3>
-            <p>hello@cwork.mn</p>
-          </div>
-          <div className={styles.miniCard}>
-            <h3>Location</h3>
-            <p>Remote / Ulaanbaatar, Mongolia</p>
-          </div>
-          <div className={styles.miniCard}>
-            <h3>Best for</h3>
-            <p>Freelancer growth, employer discovery, and premium landing experiences.</p>
-          </div>
-        </aside>
-      </div>
-    </div>
-  );
-}
-
-export function CWorkMarketingSite({ page }: SiteProps) {
+export function CWorkMarketingSite({ marqueeCompanies = [] }: { marqueeCompanies?: MarqueeCompany[] }) {
   return (
     <div className={styles.page}>
-      <Navbar page={page} />
+      <Navbar />
       <main className={styles.main}>
-        {page === "home" ? <HomePage /> : null}
-        {page === "services" ? <ServicesPage /> : null}
-        {page === "contact" ? <ContactPage /> : null}
+        <HomePage marqueeCompanies={marqueeCompanies} />
       </main>
       <Footer />
     </div>
