@@ -15,6 +15,7 @@
     "db:migrate": "node scripts/run-migrations.mjs"
   },
   "dependencies": {
+    "framer-motion": "^12.38.0",
     "mysql2": "latest",
     "next": "latest",
     "nodemailer": "^6.10.0",

@@ -7306,3 +7306,1914 @@
   background: linear-gradient(180deg, #6d28d9, #a78bfa);
   flex-shrink: 0;
 }
+.freelancerDirectoryHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);
+  gap: 28px;
+  align-items: stretch;
+  margin: 0 auto;
+  padding: 132px 32px 32px;
+  max-width: min(1560px, 100%);
+}
+
+.freelancerDirectoryHeroCopy,
+.freelancerHeroPanel,
+.freelancerFilterPanel,
+.freelancerResults {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #fff;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.07);
+}
+
+.freelancerDirectoryHeroCopy {
+  display: grid;
+  align-content: center;
+  min-height: 360px;
+  border-radius: 28px;
+  padding: clamp(28px, 5vw, 64px);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.98)),
+    radial-gradient(circle at 85% 18%, rgba(20, 184, 166, 0.16), transparent 28%);
+}
+
+.freelancerDirectoryKicker,
+.freelancerPanelEyebrow {
+  margin: 0;
+  color: #0f766e;
+  font-family: "Syne", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.freelancerDirectoryTitle {
+  max-width: 760px;
+  margin: 14px 0 18px;
+  color: #111827;
+  font-family: "Syne", sans-serif;
+  font-size: clamp(2.35rem, 5vw, 5rem);
+  font-weight: 800;
+  line-height: 0.98;
+}
+
+.freelancerDirectoryText {
+  max-width: 640px;
+  margin: 0;
+  color: #475569;
+  font-size: 1.02rem;
+  line-height: 1.75;
+}
+
+.freelancerDirectoryActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.freelancerPrimaryAction,
+.freelancerSecondaryAction,
+.freelancerCardAction,
+.freelancerClearButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  border-radius: 12px;
+  padding: 0 18px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.freelancerPrimaryAction,
+.freelancerCardAction {
+  border: 1px solid #111827;
+  background: #111827;
+  color: #fff;
+  box-shadow: 0 14px 26px rgba(17, 24, 39, 0.18);
+}
+
+.freelancerSecondaryAction,
+.freelancerClearButton {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #fff;
+  color: #111827;
+}
+
+.freelancerPrimaryAction:hover,
+.freelancerSecondaryAction:hover,
+.freelancerCardAction:hover,
+.freelancerClearButton:hover {
+  transform: translateY(-1px);
+}
+
+.freelancerHeroPanel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  border-radius: 28px;
+  padding: 18px;
+  background: #0f172a;
+}
+
+.freelancerHeroMetric {
+  display: grid;
+  align-content: end;
+  min-height: 152px;
+  border-radius: 20px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.freelancerHeroMetric strong {
+  font-size: clamp(2rem, 4vw, 3.3rem);
+  line-height: 1;
+}
+
+.freelancerHeroMetric span {
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.freelancerDirectoryShell {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 24px;
+  max-width: min(1560px, 100%);
+  margin: 0 auto;
+  padding: 0 32px 80px;
+  align-items: start;
+}
+
+.freelancerFilterPanel {
+  position: sticky;
+  top: 100px;
+  display: grid;
+  gap: 18px;
+  border-radius: 24px;
+  padding: 22px;
+}
+
+.freelancerPanelTitle {
+  margin: 4px 0 0;
+  color: #111827;
+  font-size: 1.35rem;
+  font-weight: 850;
+  letter-spacing: -0.03em;
+}
+
+.freelancerSearchBox,
+.freelancerSortBox {
+  display: grid;
+  gap: 8px;
+}
+
+.freelancerSearchBox span,
+.freelancerSortBox span {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.freelancerSearchBox input,
+.freelancerSortBox select {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #111827;
+  padding: 0 13px;
+  font: inherit;
+  outline: none;
+}
+
+.freelancerSearchBox input:focus,
+.freelancerSortBox select:focus {
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.14);
+}
+
+.freelancerRoleChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.freelancerRoleChip {
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 999px;
+  background: #fff;
+  color: #334155;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.freelancerRoleChipActive {
+  border-color: #0f766e;
+  background: #ccfbf1;
+  color: #115e59;
+}
+
+.freelancerClearButton {
+  width: 100%;
+}
+
+.freelancerResults {
+  min-width: 0;
+  border-radius: 24px;
+  padding: 22px;
+}
+
+.freelancerResultsTopbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.freelancerResultMeta {
+  margin: 0;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.freelancerDirectoryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.freelancerDirectoryCard {
+  display: flex;
+  flex-direction: column;
+  min-height: 386px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 20px;
+  background: #fff;
+  padding: 18px;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.05);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.freelancerDirectoryCard:hover {
+  transform: translateY(-3px);
+  border-color: rgba(20, 184, 166, 0.32);
+  box-shadow: 0 22px 42px rgba(15, 23, 42, 0.09);
+}
+
+.freelancerCardHeader,
+.freelancerCardProfile,
+.freelancerCardFooter,
+.freelancerPagination,
+.freelancerPagination div {
+  display: flex;
+  align-items: center;
+}
+
+.freelancerCardHeader {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.freelancerStatusDot {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #0f766e;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.freelancerStatusDot::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #10b981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.13);
+}
+
+.freelancerBadge {
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  padding: 5px 9px;
+  font-size: 0.68rem;
+  font-weight: 850;
+}
+
+.freelancerCardProfile {
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.freelancerCardAvatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  object-fit: cover;
+  background: #f1f5f9;
+}
+
+.freelancerCardProfile h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 1rem;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.freelancerCardProfile p,
+.freelancerCardDescription,
+.freelancerCardFooter small {
+  color: #64748b;
+}
+
+.freelancerCardProfile p {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.freelancerCardDescription {
+  display: -webkit-box;
+  min-height: 66px;
+  margin: 16px 0 0;
+  overflow: hidden;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.freelancerCardSkills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-height: 65px;
+  margin-top: 16px;
+}
+
+.freelancerCardSkills span {
+  align-self: start;
+  border-radius: 999px;
+  background: #f0fdfa;
+  color: #0f766e;
+  padding: 6px 9px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.freelancerCardFooter {
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  padding-top: 15px;
+}
+
+.freelancerCardFooter div {
+  display: grid;
+  gap: 2px;
+}
+
+.freelancerCardFooter strong {
+  color: #111827;
+  font-size: 0.98rem;
+  line-height: 1.1;
+}
+
+.freelancerCardLabel {
+  color: #94a3b8;
+  font-size: 0.68rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.freelancerCardAction {
+  width: 100%;
+  margin-top: 16px;
+}
+
+.freelancerPagination {
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 22px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  padding-top: 18px;
+}
+
+.freelancerPagination p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.freelancerPagination div {
+  gap: 8px;
+}
+
+.freelancerPagination button {
+  min-height: 40px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 10px;
+  background: #fff;
+  color: #111827;
+  padding: 0 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.freelancerPagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.freelancerPagination span {
+  color: #475569;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+@media (max-width: 1180px) {
+  .freelancerDirectoryHero,
+  .freelancerDirectoryShell {
+    grid-template-columns: 1fr;
+  }
+
+  .freelancerFilterPanel {
+    position: static;
+  }
+
+  .freelancerDirectoryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .freelancerDirectoryHero {
+    padding: 112px 16px 18px;
+  }
+
+  .freelancerDirectoryShell {
+    padding: 0 16px 56px;
+  }
+
+  .freelancerDirectoryHeroCopy,
+  .freelancerHeroPanel,
+  .freelancerFilterPanel,
+  .freelancerResults {
+    border-radius: 18px;
+  }
+
+  .freelancerHeroPanel,
+  .freelancerDirectoryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .freelancerResultsTopbar,
+  .freelancerPagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .freelancerPagination div {
+    justify-content: space-between;
+  }
+}
+.freelanceTargetPage {
+  min-height: 100vh;
+  background: #fbfaff;
+  color: #121229;
+  font-family: Inter, "DM Sans", Arial, sans-serif;
+}
+
+.freelanceTargetNav {
+  position: sticky;
+  top: 0;
+  z-index: 120;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: 88px;
+  padding: 0 24px;
+  border-bottom: 1px solid #f0eef7;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 35px rgba(20, 16, 44, 0.04);
+}
+
+.freelanceTargetLogo {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 2px solid #11111f;
+  border-radius: 12px;
+  color: #11111f;
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.freelanceTargetNavLinks {
+  display: flex;
+  align-items: center;
+  gap: 44px;
+  height: 100%;
+}
+
+.freelanceTargetNavLinks a {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  border-bottom: 3px solid transparent;
+  color: #15162b;
+  font-size: 0.86rem;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+}
+
+.freelanceTargetNavLinks .freelanceTargetNavActive {
+  border-bottom-color: #7842ff;
+  color: #7842ff;
+}
+
+.freelanceTargetNavActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 18px;
+}
+
+.freelanceTargetNavActions button,
+.freelanceTargetProfileBtn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #141529;
+  cursor: pointer;
+}
+
+.freelanceTargetProfileBtn {
+  background: #15192a;
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 10px 25px rgba(21, 25, 42, 0.18);
+}
+
+.freelanceHeroExact {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(480px, 0.95fr);
+  gap: 64px;
+  max-width: 1440px;
+  min-height: 684px;
+  margin: 0 auto;
+  padding: 32px 76px 42px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 78% 42%, rgba(121, 66, 255, 0.24), transparent 32%),
+    radial-gradient(circle at 72% 74%, rgba(121, 66, 255, 0.16), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #fbfaff 100%);
+}
+
+.freelanceHeroContent {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  align-content: start;
+  padding-top: 34px;
+}
+
+.freelanceHeroKicker {
+  margin: 0 0 34px;
+  color: #7842ff;
+  font-size: 0.9rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.freelanceHeroExact h1 {
+  margin: 0;
+  color: #15162b;
+  font-size: clamp(4.4rem, 6.2vw, 6.8rem);
+  font-weight: 950;
+  letter-spacing: -0.06em;
+  line-height: 0.93;
+}
+
+.freelanceHeroExact h1 span {
+  color: #7842ff;
+  text-shadow: 0 12px 34px rgba(120, 66, 255, 0.28);
+}
+
+.freelanceHeroText {
+  max-width: 610px;
+  margin: 22px 0 0;
+  color: #7e829d;
+  font-size: 1.12rem;
+  font-weight: 650;
+  line-height: 1.75;
+}
+
+.freelanceHeroButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 32px;
+}
+
+.freelanceHeroButtons a,
+.freelanceHeroButtons button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-width: 204px;
+  min-height: 58px;
+  border-radius: 8px;
+  border: 1px solid #d9d9e8;
+  background: #fff;
+  color: #1b1c31;
+  padding: 0 28px;
+  font-size: 1rem;
+  font-weight: 900;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.freelanceHeroButtons a:first-child {
+  border-color: transparent;
+  background: linear-gradient(135deg, #7435f5, #7c2df0);
+  color: #fff;
+  box-shadow: 0 18px 34px rgba(124, 45, 240, 0.28);
+}
+
+.freelanceHeroButtons span {
+  font-size: 1.55rem;
+  line-height: 0;
+}
+
+.freelanceHeroSearch {
+  display: grid;
+  grid-template-columns: auto 1fr 164px 108px;
+  align-items: center;
+  width: min(100%, 770px);
+  height: 66px;
+  margin-top: 42px;
+  border: 1px solid #deddea;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0 10px 0 22px;
+  box-shadow: 0 16px 32px rgba(19, 16, 45, 0.04);
+}
+
+.freelanceHeroSearch svg {
+  color: #8f93aa;
+}
+
+.freelanceHeroSearch input,
+.freelanceHeroSearch select {
+  height: 46px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #121229;
+  font: inherit;
+  font-weight: 700;
+}
+
+.freelanceHeroSearch input {
+  min-width: 0;
+  padding: 0 18px;
+}
+
+.freelanceHeroSearch input::placeholder {
+  color: #9ca0b8;
+}
+
+.freelanceHeroSearch select {
+  border-left: 1px solid #e6e4ef;
+  padding-left: 20px;
+}
+
+.freelanceHeroSearch button {
+  height: 50px;
+  border: 0;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #7f3cff, #6c25df);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.freelanceTrendRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 34px;
+}
+
+.freelanceTrendRow strong {
+  color: #5d6078;
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.freelanceTrendRow button,
+.freelanceTrendBox button {
+  border: 0;
+  border-radius: 999px;
+  background: #f1f0f8;
+  color: #3d3f52;
+  padding: 10px 20px;
+  font-weight: 850;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(220, 219, 235, 0.6);
+}
+
+.freelanceHeroVisual {
+  position: relative;
+  display: grid;
+  align-content: center;
+  gap: 16px;
+  min-height: 570px;
+  padding-top: 48px;
+}
+
+.freelanceHeroVisual::before {
+  content: "";
+  position: absolute;
+  inset: 118px 8px 80px -86px;
+  border: 2px dashed rgba(150, 121, 255, 0.18);
+  border-radius: 50%;
+  transform: rotate(12deg);
+}
+
+.freelanceFloatCard {
+  position: relative;
+  display: grid;
+  grid-template-columns: 82px 1fr;
+  gap: 22px;
+  align-items: center;
+  width: min(420px, 100%);
+  min-height: 132px;
+  margin-left: auto;
+  border: 1px solid rgba(232, 229, 248, 0.95);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.86);
+  padding: 22px 28px;
+  box-shadow: 0 24px 55px rgba(80, 49, 170, 0.09);
+  transform: rotate(var(--tilt));
+  backdrop-filter: blur(14px);
+}
+
+.freelanceFloatCard:nth-child(2) {
+  margin-right: -42px;
+}
+
+.freelanceFloatCard span {
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  border-radius: 999px;
+  background: #f0eaff;
+  color: #7842ff;
+  font-size: 2rem;
+  font-weight: 950;
+}
+
+.freelanceFloatCard h3 {
+  margin: 0 0 8px;
+  color: #1b1c31;
+  font-size: 1.14rem;
+  font-weight: 950;
+}
+
+.freelanceFloatCard p {
+  margin: 0;
+  color: #7a7f9d;
+  font-size: 0.98rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.freelanceTrustStrip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 30px;
+  max-width: 1440px;
+  margin: 12px auto 54px;
+  border: 1px solid #ebe9f5;
+  border-radius: 18px;
+  background: #fff;
+  padding: 46px 52px;
+  box-shadow: 0 22px 54px rgba(21, 18, 48, 0.06);
+}
+
+.freelanceTrustStrip article {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 16px;
+  align-items: center;
+}
+
+.freelanceTrustStrip article > span {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  background: #f0eaff;
+  color: #7842ff;
+  font-size: 1.7rem;
+  font-weight: 950;
+}
+
+.freelanceTrustStrip h3,
+.freelanceTrustStrip p {
+  margin: 0;
+}
+
+.freelanceTrustStrip h3 {
+  color: #1c1d32;
+  font-size: 0.94rem;
+  font-weight: 950;
+}
+
+.freelanceTrustStrip p {
+  margin-top: 5px;
+  color: #8589a5;
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+
+.freelanceBoardSection {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: #fff;
+}
+
+.freelanceBoardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 72px;
+  background: #140d2b;
+  color: #fff;
+  padding: 0 46px;
+}
+
+.freelanceBoardTop p,
+.freelanceBoardTop div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 850;
+}
+
+.freelanceBoardTop button {
+  height: 42px;
+  border: 0;
+  border-radius: 8px;
+  background: #3b286c;
+  color: #fff;
+  padding: 0 22px;
+  font-weight: 900;
+}
+
+.freelanceSearchPanel {
+  display: grid;
+  grid-template-columns: 240px 1fr 170px 230px;
+  gap: 12px;
+  margin: 0;
+  padding: 28px 48px;
+  border: 1px solid #e3e0ec;
+  border-top: 0;
+  border-radius: 8px 8px 0 0;
+  background: #fff;
+}
+
+.freelanceSearchPanel input,
+.freelanceSearchPanel select,
+.freelanceSearchPanel button,
+.freelanceResultsHead select {
+  height: 52px;
+  border: 1px solid #deddea;
+  border-radius: 8px;
+  background: #fff;
+  color: #202237;
+  padding: 0 16px;
+  font: inherit;
+  font-weight: 800;
+  outline: none;
+}
+
+.freelanceSearchPanel input::placeholder {
+  color: #9ca0b8;
+}
+
+.freelanceSearchPanel button {
+  border: 0;
+  background: linear-gradient(135deg, #7837f6, #7929e6);
+  color: #fff;
+  font-size: 1rem;
+  box-shadow: 0 12px 24px rgba(122, 45, 235, 0.22);
+}
+
+.freelanceTrendBox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 0 48px 24px;
+  border: 1px solid #e7e4f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 12px;
+}
+
+.freelanceTrendBox strong {
+  color: #3d3f52;
+  font-weight: 950;
+}
+
+.freelanceBoardLayout {
+  display: grid;
+  grid-template-columns: 312px minmax(0, 1fr);
+  gap: 28px;
+  padding: 0 48px 32px;
+}
+
+.freelanceSidePanel {
+  display: grid;
+  align-content: start;
+  border: 1px solid #e8e5f0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.freelanceSidePanel article {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 14px;
+  align-items: center;
+  min-height: 81px;
+  border-bottom: 1px solid #ebe8f1;
+  padding: 16px 20px;
+}
+
+.freelanceSidePanel article > span {
+  display: grid;
+  place-items: center;
+  color: #7637f5;
+  font-size: 1.6rem;
+}
+
+.freelanceSidePanel h3,
+.freelanceSidePanel p {
+  margin: 0;
+}
+
+.freelanceSidePanel h3 {
+  color: #17182c;
+  font-size: 0.96rem;
+  font-weight: 950;
+}
+
+.freelanceSidePanel p {
+  margin-top: 4px;
+  color: #565a70;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.freelancePurpleCta {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  margin: 16px 0 0;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 92% 82%, rgba(183, 157, 255, 0.48), transparent 26%),
+    linear-gradient(135deg, #3b1d72, #6d31df);
+  color: #fff;
+  padding: 28px 20px;
+  overflow: hidden;
+}
+
+.freelancePurpleCta::before {
+  content: "";
+  position: absolute;
+  right: -34px;
+  bottom: -46px;
+  width: 190px;
+  height: 150px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.26), transparent 66%);
+  pointer-events: none;
+}
+
+.freelancePurpleCta img {
+  position: absolute;
+  right: -18px;
+  bottom: -18px;
+  width: 128px;
+  height: 128px;
+  object-fit: cover;
+  border-radius: 999px;
+  opacity: 0.94;
+  filter: drop-shadow(0 18px 28px rgba(17, 8, 39, 0.34));
+  pointer-events: none;
+}
+
+.freelancePurpleCta h3 {
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  font-size: 1.15rem;
+  max-width: 220px;
+}
+
+.freelancePurpleCta p {
+  position: relative;
+  z-index: 1;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.55;
+  max-width: 210px;
+}
+
+.freelancePurpleCta a {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  padding: 12px 18px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.freelanceResultsArea {
+  min-width: 0;
+}
+
+.freelanceResultsHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.freelanceResultsHead h2 {
+  margin: 0;
+  color: #1b1c31;
+  font-size: 1.08rem;
+  font-weight: 950;
+}
+
+.freelanceResultsHead select {
+  width: 212px;
+  height: 38px;
+}
+
+.freelanceLoadHint {
+  margin: 12px 0;
+  color: #7b7f99;
+  font-weight: 800;
+}
+
+.freelanceCardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.freelanceResultCard {
+  position: relative;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  column-gap: 16px;
+  row-gap: 14px;
+  min-height: 250px;
+  border: 1px solid #e4e1ec;
+  border-radius: 8px;
+  background: #fff;
+  padding: 16px;
+  box-shadow: 0 10px 22px rgba(19, 16, 45, 0.04);
+}
+
+.freelanceHeart {
+  position: absolute;
+  top: 18px;
+  right: 16px;
+  border: 0;
+  background: transparent;
+  color: #8a8ea5;
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.freelanceResultCard > img {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.freelanceCardInfo {
+  min-width: 0;
+  padding-right: 34px;
+}
+
+.freelanceCardInfo h3 {
+  margin: 0;
+  color: #15162b;
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.freelanceCardInfo h3 span {
+  color: #7637f5;
+  font-size: 0.95rem;
+}
+
+.freelanceCardInfo p {
+  margin: 6px 0 7px;
+  color: #6e7287;
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.freelanceCardInfo strong {
+  color: #1d1f32;
+  font-size: 0.88rem;
+}
+
+.freelanceSkillTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  grid-column: 1 / -1;
+  margin-top: 16px;
+}
+
+.freelanceSkillTags span {
+  border-radius: 7px;
+  background: #f1f0f7;
+  color: #202237;
+  padding: 7px 12px;
+  font-size: 0.8rem;
+  font-weight: 850;
+}
+
+.freelanceCardStats {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  color: #6e7287;
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.freelanceCardActions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 114px 94px;
+  gap: 12px;
+  align-items: center;
+}
+
+.freelanceCardActions strong {
+  color: #11111f;
+  font-size: 1.35rem;
+  font-weight: 950;
+}
+
+.freelanceCardActions small {
+  color: #11111f;
+  font-size: 0.84rem;
+}
+
+.freelanceCardActions button {
+  height: 38px;
+  border: 1px solid #deddea;
+  border-radius: 7px;
+  background: #fff;
+  color: #202237;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.freelanceCardActions button:last-child {
+  border: 0;
+  background: linear-gradient(135deg, #7e3cff, #6f27e5);
+  color: #fff;
+}
+
+.freelanceEmptyPanel {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  align-items: center;
+  gap: 28px;
+  min-height: 168px;
+  margin-top: 16px;
+  border: 1px solid #e4e1ec;
+  border-radius: 8px;
+  background: #fff;
+  padding: 22px 68px;
+}
+
+.freelanceEmptyPanel > div {
+  color: #8b55ff;
+  font-size: 7rem;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 0 12px 30px rgba(126, 60, 255, 0.18);
+}
+
+.freelanceEmptyPanel h3 {
+  margin: 0 0 8px;
+  color: #1b1c31;
+  font-size: 1.15rem;
+  font-weight: 950;
+}
+
+.freelanceEmptyPanel p {
+  margin: 0 0 14px;
+  color: #50546b;
+  font-weight: 750;
+}
+
+.freelanceEmptyPanel button,
+.freelanceEmptyPanel a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  border: 1px solid #deddea;
+  border-radius: 7px;
+  background: #fff;
+  color: #202237;
+  padding: 0 20px;
+  font-weight: 900;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.freelanceEmptyPanel a {
+  margin-left: 10px;
+  border: 0;
+  background: #742ff0;
+  color: #fff;
+}
+
+@media (max-width: 1280px) {
+  .freelanceHeroExact {
+    grid-template-columns: 1fr;
+  }
+
+  .freelanceHeroVisual {
+    min-height: 420px;
+  }
+
+  .freelanceTrustStrip,
+  .freelanceCardGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .freelanceTargetNav {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .freelanceTargetNavLinks {
+    gap: 18px;
+    justify-content: center;
+  }
+
+  .freelanceHeroExact {
+    padding: 28px 22px 38px;
+  }
+
+  .freelanceHeroSearch,
+  .freelanceSearchPanel,
+  .freelanceBoardLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .freelanceTrustStrip {
+    margin-inline: 18px;
+    padding: 28px;
+  }
+
+  .freelanceBoardTop,
+  .freelanceSearchPanel,
+  .freelanceBoardLayout {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .freelanceTrendBox {
+    margin-left: 18px;
+    margin-right: 18px;
+  }
+
+  .freelanceSidePanel {
+    display: none;
+  }
+}
+
+@media (max-width: 680px) {
+  .freelanceTargetNavLinks {
+    display: none;
+  }
+
+  .freelanceHeroExact h1 {
+    font-size: 3.4rem;
+  }
+
+  .freelanceHeroButtons,
+  .freelanceBoardTop,
+  .freelanceResultsHead,
+  .freelanceCardActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .freelanceHeroButtons a,
+  .freelanceHeroButtons button,
+  .freelanceCardActions {
+    width: 100%;
+  }
+
+  .freelanceFloatCard,
+  .freelanceFloatCard:nth-child(2) {
+    width: 100%;
+    margin-right: 0;
+  }
+
+  .freelanceTrustStrip,
+  .freelanceCardGrid,
+  .freelanceResultCard,
+  .freelanceEmptyPanel {
+    grid-template-columns: 1fr;
+  }
+
+  .freelanceEmptyPanel {
+    padding: 28px;
+  }
+}
+
+/* Minimal pass for /freelancers after restoring the shared navigation */
+.freelanceTargetPage {
+  background: #fcfbff;
+  color: #17172a;
+  font-family: "Manrope", "Segoe UI", Arial, sans-serif;
+  font-synthesis-weight: none;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+.freelanceTargetPage main h1,
+.freelanceTargetPage main h2,
+.freelanceTargetPage main h3,
+.freelanceTargetPage main p,
+.freelanceTargetPage main a,
+.freelanceTargetPage main button,
+.freelanceTargetPage main input,
+.freelanceTargetPage main select,
+.freelanceTargetPage main span,
+.freelanceTargetPage main strong {
+  font-family: "Manrope", "Segoe UI", Arial, sans-serif;
+  letter-spacing: 0;
+}
+
+.freelanceHeroExact {
+  min-height: 640px;
+  padding-top: 128px;
+  background:
+    radial-gradient(circle at 78% 44%, rgba(124, 58, 237, 0.14), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #fbfaff 100%);
+}
+
+.freelanceHeroKicker {
+  margin-bottom: 26px;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+}
+
+.freelanceHeroExact h1 {
+  font-size: clamp(3.6rem, 5.1vw, 5.6rem);
+  font-weight: 780;
+  letter-spacing: 0;
+  line-height: 1.04;
+}
+
+.freelanceHeroText {
+  max-width: 560px;
+  color: #777b94;
+  font-size: 1rem;
+  font-weight: 450;
+}
+
+.freelanceHeroButtons a,
+.freelanceHeroButtons button,
+.freelanceHeroSearch button,
+.freelanceSearchPanel button,
+.freelanceCardActions button,
+.freelanceEmptyPanel button,
+.freelanceEmptyPanel a {
+  font-weight: 700;
+}
+
+.freelanceHeroSearch,
+.freelanceSearchPanel input,
+.freelanceSearchPanel select,
+.freelanceSearchPanel button,
+.freelanceResultsHead select {
+  border-radius: 10px;
+}
+
+.freelanceFloatCard,
+.freelanceTrustStrip,
+.freelanceResultCard,
+.freelanceSidePanel,
+.freelanceEmptyPanel {
+  box-shadow: 0 12px 34px rgba(26, 20, 58, 0.045);
+}
+
+.freelanceFloatCard h3,
+.freelanceTrustStrip h3,
+.freelanceSidePanel h3,
+.freelanceResultsHead h2,
+.freelanceCardInfo h3,
+.freelanceEmptyPanel h3 {
+  font-weight: 720;
+}
+
+.freelanceFloatCard p,
+.freelanceTrustStrip p,
+.freelanceSidePanel p,
+.freelanceCardInfo p,
+.freelanceCardStats,
+.freelanceEmptyPanel p {
+  font-weight: 400;
+}
+
+.freelanceBoardTop {
+  background: #160f2f;
+}
+
+.freelanceCardGrid {
+  gap: 16px;
+}
+
+.freelanceResultCard {
+  border-color: #e9e6f2;
+}
+
+/* Premium depth pass for the freelancer board section only */
+.freelanceTargetPage {
+  background: #f5f5f7;
+}
+
+.freelanceBoardSection {
+  background:
+    radial-gradient(circle at 78% 14%, rgba(124, 58, 237, 0.075), transparent 30%),
+    linear-gradient(180deg, #f5f5f7 0%, #faf9ff 48%, #f5f5f7 100%);
+}
+
+.freelanceBoardTop {
+  background:
+    radial-gradient(circle at 82% 0%, rgba(139, 92, 246, 0.22), transparent 34%),
+    linear-gradient(135deg, #120b27 0%, #1b113b 54%, #160f2f 100%);
+  box-shadow: 0 18px 46px rgba(22, 15, 47, 0.18);
+}
+
+.freelanceBoardTop button {
+  background: rgba(255, 255, 255, 0.13);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 10px 24px rgba(0, 0, 0, 0.14);
+  transition: transform 0.24s ease, background 0.24s ease, box-shadow 0.24s ease;
+}
+
+.freelanceBoardTop button:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.19);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 16px 34px rgba(0, 0, 0, 0.18);
+}
+
+.freelanceSearchPanel {
+  margin: 0 48px;
+  border: 1px solid rgba(124, 58, 237, 0.1);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow:
+    0 24px 70px rgba(31, 23, 75, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.88) inset;
+  backdrop-filter: blur(18px);
+}
+
+.freelanceSearchPanel input,
+.freelanceSearchPanel select,
+.freelanceResultsHead select {
+  border-color: rgba(111, 103, 136, 0.16);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
+  color: #19172c;
+  font-size: 0.95rem;
+  font-weight: 600;
+  box-shadow: 0 10px 26px rgba(31, 23, 75, 0.045);
+  transition: border-color 0.24s ease, box-shadow 0.24s ease, background 0.24s ease, transform 0.24s ease;
+}
+
+.freelanceSearchPanel input:focus,
+.freelanceSearchPanel select:focus,
+.freelanceResultsHead select:focus {
+  border-color: rgba(124, 58, 237, 0.36);
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(124, 58, 237, 0.12), 0 0 0 4px rgba(124, 58, 237, 0.08);
+  transform: translateY(-1px);
+}
+
+.freelanceSearchPanel button,
+.freelanceCardActions button:last-child,
+.freelanceEmptyPanel a {
+  border: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 45%, #5b21b6 100%);
+  box-shadow: 0 16px 34px rgba(124, 58, 237, 0.28);
+  transition: transform 0.24s ease, box-shadow 0.24s ease, filter 0.24s ease;
+}
+
+.freelanceSearchPanel button:hover,
+.freelanceCardActions button:last-child:hover,
+.freelanceEmptyPanel a:hover {
+  transform: translateY(-3px);
+  filter: saturate(1.08);
+  box-shadow: 0 24px 46px rgba(124, 58, 237, 0.34);
+}
+
+.freelanceTrendBox {
+  margin-top: 18px;
+  border-color: rgba(124, 58, 237, 0.1);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.74);
+  box-shadow: 0 18px 48px rgba(31, 23, 75, 0.065), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+}
+
+.freelanceTrendRow button,
+.freelanceTrendBox button,
+.freelanceSkillTags span {
+  border: 1px solid rgba(124, 58, 237, 0.09);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(246, 244, 255, 0.94));
+  color: #343044;
+  box-shadow: 0 8px 18px rgba(31, 23, 75, 0.055), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  transition: transform 0.22s ease, border-color 0.22s ease, color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.freelanceTrendRow button:hover,
+.freelanceTrendBox button:hover,
+.freelanceSkillTags span:hover {
+  transform: translateY(-2px);
+  border-color: rgba(124, 58, 237, 0.24);
+  color: #6d28d9;
+  box-shadow: 0 14px 28px rgba(124, 58, 237, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.freelanceBoardLayout {
+  gap: 22px;
+  padding-top: 2px;
+}
+
+.freelanceSidePanel {
+  border-color: rgba(124, 58, 237, 0.1);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 22px 60px rgba(31, 23, 75, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(18px);
+}
+
+.freelanceSidePanel article {
+  min-height: 70px;
+  gap: 12px;
+  border-bottom-color: rgba(124, 58, 237, 0.075);
+  padding: 13px 18px;
+  transition: background 0.24s ease, transform 0.24s ease;
+}
+
+.freelanceSidePanel article:hover {
+  background: rgba(246, 244, 255, 0.68);
+}
+
+.freelanceSidePanel article > span {
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.14), rgba(124, 58, 237, 0.06));
+  font-size: 1.22rem;
+}
+
+.freelanceSidePanel h3 {
+  font-size: 0.91rem;
+  letter-spacing: -0.01em;
+}
+
+.freelanceSidePanel p {
+  margin-top: 2px;
+  color: #6b687b;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.freelancePurpleCta {
+  margin: 14px;
+  min-height: 252px;
+  align-content: end;
+  gap: 10px;
+  padding: 26px 18px 20px;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 78% 26%, rgba(255, 255, 255, 0.24), transparent 30%),
+    radial-gradient(circle at 96% 92%, rgba(215, 190, 255, 0.5), transparent 34%),
+    linear-gradient(145deg, #3a1b70 0%, #5b2bc7 52%, #7a3ff2 100%);
+  box-shadow: 0 22px 46px rgba(77, 36, 151, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.freelancePurpleCta img {
+  right: -30px;
+  top: -22px;
+  bottom: auto;
+  width: 188px;
+  height: 158px;
+  border-radius: 0;
+  object-position: center;
+  opacity: 0.98;
+}
+
+.freelancePurpleCta h3 {
+  max-width: 210px;
+  margin-top: 76px;
+  font-size: 1.14rem;
+  line-height: 1.25;
+}
+
+.freelancePurpleCta p {
+  max-width: 215px;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.freelancePurpleCta a {
+  min-height: 40px;
+  width: 100%;
+  max-width: 218px;
+  padding: 0 14px;
+  font-size: 0.84rem;
+  backdrop-filter: blur(10px);
+}
+
+.freelanceResultsHead {
+  margin-bottom: 16px;
+}
+
+.freelanceResultsHead h2 {
+  color: #19172c;
+  font-size: 1.18rem;
+  letter-spacing: -0.015em;
+}
+
+.freelanceCardGrid {
+  gap: 18px;
+}
+
+.freelanceResultCard {
+  min-height: 268px;
+  border-color: rgba(124, 58, 237, 0.1);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.88));
+  padding: 22px;
+  box-shadow:
+    0 22px 55px rgba(31, 23, 75, 0.095),
+    0 2px 8px rgba(31, 23, 75, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(16px);
+  transition: border-color 0.28s ease, box-shadow 0.28s ease, background 0.28s ease, filter 0.28s ease;
+}
+
+.freelanceResultCard::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: radial-gradient(circle at 78% 12%, rgba(124, 58, 237, 0.18), transparent 34%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+}
+
+.freelanceResultCard:hover {
+  border-color: rgba(124, 58, 237, 0.26);
+  box-shadow:
+    0 30px 70px rgba(31, 23, 75, 0.14),
+    0 0 0 1px rgba(124, 58, 237, 0.08),
+    0 0 38px rgba(124, 58, 237, 0.16);
+  filter: saturate(1.02);
+}
+
+.freelanceResultCard:hover::before {
+  opacity: 1;
+}
+
+.freelanceResultCard > img {
+  width: 76px;
+  height: 76px;
+  box-shadow: 0 12px 28px rgba(31, 23, 75, 0.16);
+}
+
+.freelanceHeart {
+  color: #9291a3;
+  transition: transform 0.22s ease, color 0.22s ease;
+}
+
+.freelanceHeart:hover {
+  color: #7c3aed;
+  transform: scale(1.12);
+}
+
+.freelanceCardInfo h3 {
+  color: #171529;
+  font-size: 1.06rem;
+  font-weight: 760;
+  letter-spacing: -0.015em;
+}
+
+.freelanceCardInfo p {
+  color: #6d6a7d;
+  font-size: 0.92rem;
+}
+
+.freelanceCardInfo strong {
+  color: #272238;
+  font-size: 0.9rem;
+  font-weight: 720;
+}
+
+.freelanceCardStats {
+  gap: 14px;
+  color: #777385;
+  font-size: 0.84rem;
+}
+
+.freelanceCardActions {
+  grid-template-columns: 1fr 118px 98px;
+}
+
+.freelanceCardActions strong {
+  color: #12111f;
+  font-size: 1.42rem;
+  letter-spacing: -0.02em;
+}
+
+.freelanceCardActions small {
+  color: #4d4a5d;
+  font-weight: 600;
+}
+
+.freelanceCardActions button {
+  border-color: rgba(30, 27, 75, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 10px 22px rgba(31, 23, 75, 0.055);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+}
+
+.freelanceCardActions button:hover {
+  transform: translateY(-2px);
+  border-color: rgba(124, 58, 237, 0.24);
+  box-shadow: 0 16px 30px rgba(31, 23, 75, 0.1);
+}
+
+.freelanceEmptyPanel {
+  border-color: rgba(124, 58, 237, 0.1);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 24px 64px rgba(31, 23, 75, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(16px);
+}
+
+.freelanceEmptyPanel button {
+  border-color: rgba(30, 27, 75, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 10px 22px rgba(31, 23, 75, 0.055);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.freelanceEmptyPanel button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 30px rgba(31, 23, 75, 0.1);
+}
+
+@media (max-width: 980px) {
+  .freelanceSearchPanel {
+    margin: 0 18px;
+  }
+}
+
+/* Align /freelancers hero, trust strip, and listing board to the same page width */
+.freelanceHeroExact,
+.freelanceTrustStrip {
+  width: auto;
+  max-width: none;
+  margin-right: 48px;
+  margin-left: 48px;
+}
+
+.freelanceHeroExact {
+  margin-top: 0;
+}
+
+.freelanceTrustStrip {
+  margin-top: 12px;
+  margin-bottom: 54px;
+}
+
+.freelanceSearchPanel,
+.freelanceTrendBox,
+.freelanceBoardLayout {
+  margin-right: 48px;
+  margin-left: 48px;
+}
+
+.freelanceBoardLayout {
+  padding-right: 0;
+  padding-left: 0;
+}
+
+@media (max-width: 980px) {
+  .freelanceHeroExact,
+  .freelanceTrustStrip,
+  .freelanceSearchPanel,
+  .freelanceTrendBox,
+  .freelanceBoardLayout {
+    margin-right: 18px;
+    margin-left: 18px;
+  }
+}
+
+@media (max-width: 680px) {
+  .freelanceHeroExact,
+  .freelanceTrustStrip,
+  .freelanceSearchPanel,
+  .freelanceTrendBox,
+  .freelanceBoardLayout {
+    margin-right: 14px;
+    margin-left: 14px;
+  }
+}
+
+@media (max-width: 980px) {
+  .freelanceHeroExact {
+    padding-top: 116px;
+  }
+}
+
+@media (max-width: 680px) {
+  .freelanceHeroExact h1 {
+    font-size: 3rem;
+  }
+}
