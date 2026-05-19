@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import type { NextResponse } from "next/server";
 
 const COOKIE_NAME = "google_oauth_pending";
 const MAX_AGE_SEC = 600;
@@ -35,15 +36,21 @@ function decodePayload(raw: string): GoogleOAuthPending | null {
   }
 }
 
+const PENDING_COOKIE_OPTIONS = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: process.env.NODE_ENV === "production",
+  path: "/",
+  maxAge: MAX_AGE_SEC,
+};
+
+export function applyGoogleOAuthPendingCookie(response: NextResponse, payload: GoogleOAuthPending) {
+  response.cookies.set(COOKIE_NAME, encodePayload(payload), PENDING_COOKIE_OPTIONS);
+}
+
 export async function setGoogleOAuthPending(payload: GoogleOAuthPending) {
   const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, encodePayload(payload), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: MAX_AGE_SEC,
-  });
+  cookieStore.set(COOKIE_NAME, encodePayload(payload), PENDING_COOKIE_OPTIONS);
 }
 
 export async function readGoogleOAuthPending(): Promise<GoogleOAuthPending | null> {

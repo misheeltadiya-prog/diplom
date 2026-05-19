@@ -1,5 +1,6 @@
 import { randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
+import type { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 
 const SESSION_COOKIE = "zeel_session";
@@ -151,27 +152,37 @@ export async function getCurrentUser() {
   }
 }
 
-export async function createSession(userId: number) {
+const SESSION_COOKIE_OPTIONS = (expiresAt: Date) => ({
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: process.env.NODE_ENV === "production",
+  path: "/",
+  expires: expiresAt,
+});
+
+/** DB-д session үүсгээд token буцаана */
+export async function issueSession(userId: number) {
   const db = getDb();
   const token = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
 
   await db.execute(
-    `
-      INSERT INTO user_sessions (user_id, session_token, expires_at)
-      VALUES (?, ?, ?)
-    `,
+    `INSERT INTO user_sessions (user_id, session_token, expires_at) VALUES (?, ?, ?)`,
     [userId, token, expiresAt],
   );
 
+  return { token, expiresAt };
+}
+
+/** Redirect response дээр session cookie (OAuth callback) */
+export function applySessionCookie(response: NextResponse, token: string, expiresAt: Date) {
+  response.cookies.set(SESSION_COOKIE, token, SESSION_COOKIE_OPTIONS(expiresAt));
+}
+
+export async function createSession(userId: number) {
+  const { token, expiresAt } = await issueSession(userId);
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    expires: expiresAt,
-  });
+  cookieStore.set(SESSION_COOKIE, token, SESSION_COOKIE_OPTIONS(expiresAt));
 }
 
 export async function clearSession() {

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
-import { buildGoogleAuthUrl, getGoogleOAuthConfig, newOAuthStateToken } from "@/lib/google-oauth";
-import { setGoogleOAuthPending, type GoogleOAuthPending } from "@/lib/oauth-state-cookie";
+import { buildGoogleAuthUrl, getGoogleOAuthConfig } from "@/lib/google-oauth";
+import { createSignedOAuthState } from "@/lib/oauth-state-signed";
+import { applyGoogleOAuthPendingCookie, type GoogleOAuthPending } from "@/lib/oauth-state-cookie";
 
 function oauthErrorRedirect(
   req: Request,
@@ -35,9 +36,11 @@ export async function GET(request: Request) {
       : undefined;
   const returnTo = searchParams.get("signup") === "1" ? "register" : "login";
 
-  const state = newOAuthStateToken();
-  await setGoogleOAuthPending({ state, intentRole, next, returnTo });
+  const state = createSignedOAuthState({ intentRole, next, returnTo });
+  const pending: GoogleOAuthPending = { state, intentRole, next, returnTo };
 
   const authUrl = buildGoogleAuthUrl(config, state);
-  return NextResponse.redirect(authUrl);
+  const response = NextResponse.redirect(authUrl);
+  applyGoogleOAuthPendingCookie(response, pending);
+  return response;
 }

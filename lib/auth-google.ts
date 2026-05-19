@@ -108,7 +108,15 @@ async function createGoogleUser(
   } catch (err: unknown) {
     const code = (err as { code?: string }).code;
     if (code === "ER_BAD_FIELD_ERROR") {
-      throw new Error("GOOGLE_ID_COLUMN_MISSING");
+      try {
+        const [result] = (await db.execute(
+          `INSERT INTO users (full_name, phone, email, password_hash, role) VALUES (?, ?, ?, ?, ?)`,
+          [profile.name, phone, profile.email, passwordHash, role],
+        )) as [{ insertId: number }, unknown];
+        return result.insertId;
+      } catch {
+        throw new Error("GOOGLE_ID_COLUMN_MISSING");
+      }
     }
     throw err;
   }

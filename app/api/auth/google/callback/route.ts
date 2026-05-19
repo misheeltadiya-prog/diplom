@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 import { resolveGoogleLogin } from "@/lib/auth-google";
-import { createSession } from "@/lib/auth";
+import { applySessionCookie, issueSession } from "@/lib/auth";
 import { exchangeCodeForGoogleProfile, getGoogleOAuthConfig } from "@/lib/google-oauth";
 import {
   clearGoogleOAuthPending,
   readGoogleOAuthPending,
   type GoogleOAuthPending,
 } from "@/lib/oauth-state-cookie";
+import { parseSignedOAuthState } from "@/lib/oauth-state-signed";
 import { postLoginPath } from "@/lib/post-login-redirect";
 
 function oauthErrorRedirect(
@@ -39,11 +40,23 @@ export async function GET(request: Request) {
     return oauthErrorRedirect(request, "invalid_callback");
   }
 
-  const pending = await readGoogleOAuthPending();
+  const signed = parseSignedOAuthState(state);
+  const cookiePending = await readGoogleOAuthPending();
   await clearGoogleOAuthPending();
 
-  if (!pending || pending.state !== state) {
-    return oauthErrorRedirect(request, "invalid_state", pending);
+  const pending: GoogleOAuthPending | null = signed
+    ? {
+        state,
+        intentRole: signed.intentRole,
+        next: signed.next,
+        returnTo: signed.returnTo,
+      }
+    : cookiePending && cookiePending.state === state
+      ? cookiePending
+      : null;
+
+  if (!pending) {
+    return oauthErrorRedirect(request, "invalid_state", cookiePending);
   }
 
   const config = getGoogleOAuthConfig(request);
@@ -65,15 +78,21 @@ export async function GET(request: Request) {
       return oauthErrorRedirect(request, "email_required", pending);
     }
 
-    await createSession(result.userId);
+    const { token, expiresAt } = await issueSession(result.userId);
 
     const dest = postLoginPath(result.role, {
       next: pending.next,
       isNewOAuthUser: result.isNewUser,
     });
-    return NextResponse.redirect(new URL(dest, request.url));
+    const response = NextResponse.redirect(new URL(dest, request.url));
+    applySessionCookie(response, token, expiresAt);
+    return response;
   } catch (err) {
-    console.error("[google-oauth-callback]", err);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[google-oauth-callback]", msg, err);
+    if (/GOOGLE_ID_COLUMN_MISSING|google_id/i.test(msg)) {
+      return oauthErrorRedirect(request, "migration_required", pending);
+    }
     return oauthErrorRedirect(request, "server_error", pending);
   }
 }
