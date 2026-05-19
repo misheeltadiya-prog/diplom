@@ -7,7 +7,7 @@ import { getStripe } from "@/lib/stripe-server";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(request: Request) {
   const env = getEnvStatus();
   let database: "connected" | "disconnected" = "disconnected";
   let dbError: string | undefined;
