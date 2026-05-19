@@ -3237,6 +3237,10 @@
   border-bottom: 1px solid #f1f5f9;
 }
 
+.chatHistoryHeader strong {
+  color: #464646;
+}
+
 .chatHistorySub {
   font-size: 0.82rem;
   color: #64748b;
@@ -3511,6 +3515,11 @@ button.settingsBackLink {
   font-weight: 800;
 }
 
+.chatHistoryChatTop strong,
+.chatHistoryChatTop span {
+  color: #464646;
+}
+
 .chatHistoryMsg {
   display: flex;
   flex-direction: column;
@@ -3534,17 +3543,18 @@ button.settingsBackLink {
   line-height: 1.45;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  color: #000000;
 }
 
 .chatHistoryMsgMe .chatHistoryBubble {
-  background: var(--profile-accent);
-  color: #fff;
+  background: #ede9fe;
+  color: #000000;
   border-bottom-right-radius: 4px;
 }
 
 .chatHistoryMsgOther .chatHistoryBubble {
   background: #f1f5f9;
-  color: #1e293b;
+  color: #000000;
   border-bottom-left-radius: 4px;
 }
 

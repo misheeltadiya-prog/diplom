@@ -672,8 +672,18 @@
   font-family: "Manrope", "DM Sans", sans-serif;
   font-size: 1rem;
   line-height: 1.5;
+  color: #000000;
+  caret-color: #000000;
+  -webkit-text-fill-color: #000000;
   outline: 2px solid transparent;
   transition: outline-color 0.2s ease;
+}
+
+.fieldInput::placeholder,
+.fieldTextarea::placeholder {
+  color: #64748b;
+  opacity: 1;
+  -webkit-text-fill-color: #64748b;
 }
 
 .fieldTextarea {

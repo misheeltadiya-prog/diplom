@@ -69,12 +69,15 @@ export function validateServerEnv(): EnvIssue[] {
 }
 
 export function getEnvStatus() {
+  const geminiKey = read("GEMINI_API_KEY");
   return {
     nodeEnv: process.env.NODE_ENV ?? "development",
     smtp: isSmtpConfigured(),
     s3: isS3Configured(),
     stripe: Boolean(read("STRIPE_SECRET_KEY") && !getStripeKeyValidationError()),
     stripeWebhook: Boolean(read("STRIPE_WEBHOOK_SECRET")),
+    gemini: geminiKey.length >= 20,
+    geminiModel: read("GEMINI_MODEL") || "gemini-2.0-flash (default)",
     qpay: Boolean(read("QPAY_USERNAME") && read("QPAY_PASSWORD")),
     realtime: read("REALTIME_PROVIDER") || "sse",
     issues: validateServerEnv(),

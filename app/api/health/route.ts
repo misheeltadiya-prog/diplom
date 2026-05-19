@@ -30,6 +30,8 @@ export async function GET() {
         s3: env.s3,
         stripe: env.stripe,
         stripeWebhook: env.stripeWebhook,
+        gemini: env.gemini,
+        geminiModel: env.geminiModel,
         qpay: env.qpay,
         realtime: env.realtime,
         issueCount: env.issues.length,

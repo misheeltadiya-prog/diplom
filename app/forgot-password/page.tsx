@@ -7,6 +7,7 @@ import styles from "./forgot-password.module.css";
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+  const [resetUrl, setResetUrl] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -14,6 +15,7 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setErr(null);
     setMsg(null);
+    setResetUrl(null);
     setLoading(true);
     try {
       const res = await fetch("/api/auth/forgot-password", {
@@ -21,15 +23,30 @@ export default function ForgotPasswordPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      const json = (await res.json()) as { ok?: boolean; error?: string; devResetUrl?: string };
+      const json = (await res.json()) as {
+        ok?: boolean;
+        error?: string;
+        devResetUrl?: string;
+        message?: string;
+        emailSent?: boolean;
+      };
       if (!res.ok) {
         setErr(json.error ?? "Алдаа");
         return;
       }
+      if (json.devResetUrl) {
+        setResetUrl(json.devResetUrl);
+        setMsg(
+          json.message ??
+            "Доорх холбоосоор шинэ нууц үг тохируулна уу (1 цагийн дотор):",
+        );
+        return;
+      }
       setMsg(
-        json.devResetUrl
-          ? `Хөгжүүлэлтийн горим: нууц үг шинэчлэх холбоос — ${json.devResetUrl}`
-          : "Хэрэв и-мэйл бүртгэлтэй бол заавар илгээгдэнэ (SMTP тохируулаагүй бол зөвхөн сервер лог).",
+        json.message ??
+          (json.emailSent
+            ? "И-мэйл илгээлээ. Хайрцгаа шалгаад холбоосоор нууц үгээ шинэчилнэ үү."
+            : "Хэрэв и-мэйл бүртгэлтэй бол заавар илгээгдэнэ."),
       );
     } catch {
       setErr("Сүлжээний алдаа.");
@@ -102,6 +119,13 @@ export default function ForgotPasswordPage() {
 
             {err ? <p className={styles.errorMsg}>{err}</p> : null}
             {msg ? <p className={styles.successMsg}>{msg}</p> : null}
+            {resetUrl ? (
+              <p className={styles.resetLinkWrap}>
+                <a className={styles.resetLink} href={resetUrl}>
+                  Нууц үг шинэчлэх холбоос
+                </a>
+              </p>
+            ) : null}
 
             <button className={styles.submitButton} disabled={loading} type="submit">
               <span>{loading ? "Илгээж байна..." : "Илгээх"}</span>

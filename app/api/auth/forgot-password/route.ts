@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto";
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { publicAppUrl, sendTransactionalEmail } from "@/lib/mail";
+import { isSmtpConfigured, publicAppUrl, sendTransactionalEmail } from "@/lib/mail";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 type Body = { email?: string };
@@ -41,18 +41,49 @@ export async function POST(request: Request) {
     const resetUrl = publicAppUrl(`/reset-password?token=${encodeURIComponent(token)}`);
 
     if (process.env.NODE_ENV !== "production") {
-      return NextResponse.json({ ok: true, devResetUrl: resetUrl });
+      return NextResponse.json({ ok: true, devResetUrl: resetUrl, emailSent: false });
     }
 
-    await sendTransactionalEmail({
+    const mail = await sendTransactionalEmail({
       to: email,
       subject: "C-Work — нууц үг сэргээх",
       text: `Дараах холбоосоор нууц үгээ шинэчилнэ үү (1 цагийн дотор):\n${resetUrl}\n\nХэрэв та хүсээгүй бол энэ и-мэйлийг үл тоомсорлоно уу.`,
       html: `<p>Дараах товчоор нууц үгээ шинэчилнэ үү (1 цагийн дотор):</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
     });
 
-    return NextResponse.json({ ok: true });
-  } catch {
+    if (mail.ok) {
+      return NextResponse.json({ ok: true, emailSent: true });
+    }
+
+    const exposeLink =
+      process.env.PASSWORD_RESET_EXPOSE_LINK === "1" || !isSmtpConfigured();
+
+    if (exposeLink) {
+      return NextResponse.json({
+        ok: true,
+        emailSent: false,
+        devResetUrl: resetUrl,
+        message:
+          "И-мэйл илгээгдээгүй (SMTP тохиргоогүй). Доорх холбоосоор нууц үгээ шинэчилнэ үү.",
+      });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      emailSent: false,
+      message: "Хүсэлт хүлээн авлаа. И-мэйл ирэхгүй бол SMTP тохиргоог шалгана уу.",
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/password_resets/i.test(msg)) {
+      return NextResponse.json(
+        {
+          error:
+            "password_resets хүснэгт байхгүй. Локалаас npm run db:bootstrap эсвэл schema.sql ажиллуулна уу.",
+        },
+        { status: 503 },
+      );
+    }
     return NextResponse.json({ ok: true });
   }
 }
