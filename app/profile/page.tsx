@@ -65,9 +65,9 @@ export default async function ProfileIndexPage() {
           <p className={styles.dashboardGreetingDate}>{todayLabel}</p>
         </div>
         <div className={styles.dashboardGreetingActions}>
-          <button type="button" className={styles.dashboardBtnGhost} disabled title="Удахгүй нэмэгдэнэ">
-            Тайлан татах
-          </button>
+          <Link href="/profile/cv/view" className={styles.dashboardBtnGhost}>
+            CV харах
+          </Link>
           <Link href="/profile/cv" className={styles.dashboardBtnPrimary}>
             CV шинэчлэх
           </Link>

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { CvProfile } from "@/lib/profile-cv";
+import { CvPreviewDocument } from "@/components/cv/cv-preview-document";
 import { BackButton } from "../back-button";
 import styles from "../profile.module.css";
 

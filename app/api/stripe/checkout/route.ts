@@ -17,16 +17,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Нэвтэрнэ үү." }, { status: 401 });
   }
 
+  const keyErr = getStripeKeyValidationError();
   const stripe = getStripe();
   if (!stripe) {
-    const keyErr = getStripeKeyValidationError();
     return NextResponse.json(
       {
         ok: false,
         error: keyErr ?? "Stripe тохируулаагүй (STRIPE_SECRET_KEY).",
         stripeConfigured: false,
+        hint:
+          "Локал: .env.local эсвэл npm run dev-ийн өмнө $env:STRIPE_SECRET_KEY. Vercel: STRIPE_SECRET_KEY + STRIPE_PRICE_ID_PRO/BUSINESS (эсвэл PREMIUM/STANDARD).",
       },
-      { status: keyErr ? 400 : 503 },
+      { status: 503 },
     );
   }
 
@@ -75,6 +77,8 @@ export async function POST(req: Request) {
           canonical === "premium"
             ? "STRIPE_PRICE_ID_PREMIUM эсвэл STRIPE_PRICE_ID_PRO тохируулаагүй."
             : "STRIPE_PRICE_ID_STANDARD эсвэл STRIPE_PRICE_ID_BUSINESS тохируулаагүй.",
+        stripeConfigured: true,
+        hint: "Stripe Dashboard → Products → subscription Price ID-г Vercel env-д нэг мөрөөр оруулна.",
       },
       { status: 503 },
     );

@@ -46,16 +46,16 @@ export function companyInitials(name: string) {
   return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
 }
 
-export function companyLogoUrl(domain: string) {
-  const host = domain.trim();
-  if (!host || host === "example.com") return "";
-  return `https://logo.clearbit.com/${host}`;
-}
-
+/** Google favicon — Clearbit logo API их орчинд DNS/хүртээмжгүй. */
 export function companyFaviconUrl(domain: string) {
-  const host = domain.trim();
+  const host = domain.trim().replace(/^https?:\/\//i, "").split("/")[0] ?? "";
   if (!host || host === "example.com") return "";
   return `https://www.google.com/s2/favicons?sz=128&domain_url=${encodeURIComponent(`https://${host}`)}`;
+}
+
+/** @deprecated Clearbit ашиглахгүй — favicon л буцаана */
+export function companyLogoUrl(domain: string) {
+  return companyFaviconUrl(domain);
 }
 
 function isGeneratedPlaceholderAsset(url: string) {
@@ -69,8 +69,6 @@ export function resolveCompanyLogoSrc(company: Pick<CompanyBase, "logoUrl" | "us
 
   const domain = company.domain?.trim();
   if (domain && domain !== "example.com") {
-    const clearbit = companyLogoUrl(domain);
-    if (clearbit) return clearbit;
     return companyFaviconUrl(domain);
   }
 

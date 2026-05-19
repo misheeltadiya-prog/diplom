@@ -299,6 +299,7 @@ export function UpgradeClient({ checkoutFlash, checkoutSessionId }: UpgradeClien
         url?: string;
         error?: string;
         detail?: string;
+        hint?: string;
         alreadyActive?: boolean;
       };
       if (!r.ok || !j.ok) {
@@ -308,8 +309,8 @@ export function UpgradeClient({ checkoutFlash, checkoutSessionId }: UpgradeClien
           router.refresh();
           return;
         }
-        const hint = j.detail ? ` (${j.detail})` : "";
-        setErr(`${j.error ?? "Stripe алдаа"}${hint}`);
+        const parts = [j.error ?? "Stripe алдаа", j.detail, j.hint].filter(Boolean);
+        setErr(parts.join(" — "));
         return;
       }
       if (j.url) {

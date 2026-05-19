@@ -3840,3 +3840,50 @@ button.settingsBackLink {
     max-width: none;
   }
 }
+
+.cvViewPage {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cvViewToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.cvViewToolbarActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+@media print {
+  :global(body) * {
+    visibility: hidden;
+  }
+
+  :global(body) .cvPrintArea,
+  :global(body) .cvPrintArea * {
+    visibility: visible;
+  }
+
+  :global(body) .cvPrintArea {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  .cvViewToolbar {
+    display: none !important;
+  }
+
+  .cvPreviewCard {
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
