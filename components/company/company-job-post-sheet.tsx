@@ -127,9 +127,6 @@ export function CompanyJobPostSheet({ open, onClose, onPosted, onError }: Compan
         <header className={styles.freelancerPublishSheetHeader}>
           <p className={styles.freelancerPublishSheetKicker}>C-WORK · COMPANY</p>
           <h2 id="company-job-post-sheet-title">Зар оруулах · нийтлэх</h2>
-          <p className={styles.freelancerPublishSheetSubtitle}>
-            Жагсаалтад гарсан зар таны компанийн нэр, байршилтай нийцнэ. Доорх хэсгүүдийг бөглөж ажлын саналаа нэмнэ үү.
-          </p>
         </header>
         <div className={styles.freelancerPublishSheetBody}>
           <form className={styles.jobsPostForm} onSubmit={handleCreate}>

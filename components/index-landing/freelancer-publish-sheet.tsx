@@ -65,10 +65,6 @@ export function FreelancerPublishSheet({ open, onClose, currentUser, onSaved }: 
         <header className={styles.freelancerPublishSheetHeader}>
           <p className={styles.freelancerPublishSheetKicker}>C-WORK · FREELANCER</p>
           <h2>Зар оруулах · засах</h2>
-          <p className={styles.freelancerPublishSheetSubtitle}>
-            Жагсаалтын карт, дэлгэрэнгүй хуудас таны профайлын зураг, нэртэй нийцнэ. CV хадгалахад доорх талбарууд
-            автоматаар шинэчлэгдэнэ.
-          </p>
         </header>
 
         <div className={styles.freelancerPublishSheetBody}>

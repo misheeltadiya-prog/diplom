@@ -1425,9 +1425,6 @@ export function JobsListSection({
                 <header className={styles.freelancerPublishSheetHeader}>
                   <p className={styles.freelancerPublishSheetKicker}>C-WORK · JOBS</p>
                   <h2 id="jobs-post-sheet-title">Зар оруулах</h2>
-                  <p className={styles.freelancerPublishSheetSubtitle}>
-                    Компаниас ажлын зар эндээс нэмэгдэнэ. Freelancer-ийн профайл зар өөр цонхноос нэмэгддэг.
-                  </p>
                 </header>
                 <div className={styles.freelancerPublishSheetBody}>
                   <div className={styles.landingSheetGate}>
@@ -1457,9 +1454,6 @@ export function JobsListSection({
                 <header className={styles.freelancerPublishSheetHeader}>
                   <p className={styles.freelancerPublishSheetKicker}>C-WORK · COMPANY</p>
                   <h2 id="jobs-post-sheet-title">Зар оруулах · нийтлэх</h2>
-                  <p className={styles.freelancerPublishSheetSubtitle}>
-                    Жагсаалтад гарсан зар таны компанийн нэр, байршилтай нийцнэ. Доорх хэсгүүдийг бөглөж ажлын саналаа нэмнэ үү.
-                  </p>
                 </header>
                 <div className={styles.freelancerPublishSheetBody}>
                   {currentUser?.role === "company" ? (
@@ -1671,9 +1665,6 @@ export function JobsListSection({
                 <header className={styles.freelancerPublishSheetHeader}>
                   <p className={styles.freelancerPublishSheetKicker}>C-WORK · COMPANY</p>
                   <h2 id="jobs-post-sheet-title">Зар оруулах · нийтлэх</h2>
-                  <p className={styles.freelancerPublishSheetSubtitle}>
-                    Ажлын зарын талбарууд profile-ын компанийн мэдээлэлтэй нийцнэ. Бөглөөд жагсаалтад нэмнэ үү.
-                  </p>
                 </header>
                 <div className={styles.freelancerPublishSheetBody}>
                 {currentUser?.role === "company" ? (

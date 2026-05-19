@@ -57,20 +57,6 @@ export default function ForgotPasswordPage() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.navbar}>
-        <Link className={styles.brand} href="/">
-          C-Work
-        </Link>
-        <nav className={styles.navLinks} aria-label="Forgot password navigation">
-          <Link href="/jobs">Careers</Link>
-          <Link href="/#about">About Us</Link>
-          <Link href="/#benefits">Benefits</Link>
-        </nav>
-        <Link className={styles.signInButton} href="/login">
-          Sign In
-        </Link>
-      </header>
-
       <section className={styles.hero} aria-label="Нууц үг сэргээх">
         <div className={styles.card}>
           <div className={styles.iconBubble} aria-hidden>

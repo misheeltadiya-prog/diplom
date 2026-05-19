@@ -965,18 +965,20 @@
   right: 14px;
   width: 40px;
   height: 40px;
-  border: none;
+  border: 2px solid rgba(91, 33, 182, 0.28);
   border-radius: 12px;
-  background: #f1f5f9;
-  color: #475569;
-  font-size: 1.35rem;
+  background: #ffffff;
+  color: #5b21b6;
+  font-size: 1.5rem;
   line-height: 1;
   cursor: pointer;
-  font-weight: 300;
+  font-weight: 700;
 }
 
 .applicationDetailClose:hover {
-  background: #e2e8f0;
+  background: #ede9fe;
+  border-color: #7c3aed;
+  color: #4c1d95;
 }
 
 .applicationDetailHead {
@@ -1327,13 +1329,15 @@
   padding: 0 18px;
   border: 0;
   border-radius: 16px;
-  background: linear-gradient(135deg, var(--profile-accent), var(--profile-accent-strong));
-  color: #fff;
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: #ffffff;
   font-weight: 800;
+  cursor: pointer;
 }
 
 .primaryButton:hover {
-  filter: saturate(1.05);
+  background: linear-gradient(135deg, #6d28d9, #5b21b6);
+  color: #ffffff;
 }
 
 .primaryButton:disabled {
@@ -3250,10 +3254,18 @@
 .chatHistoryClose {
   width: 36px;
   height: 36px;
-  border: none;
+  border: 2px solid rgba(91, 33, 182, 0.22);
   border-radius: 10px;
-  background: #f1f5f9;
+  background: #ffffff;
+  color: #5b21b6;
+  font-size: 1.1rem;
+  font-weight: 700;
   cursor: pointer;
+}
+
+.chatHistoryClose:hover {
+  background: #ede9fe;
+  color: #4c1d95;
 }
 
 .chatHistoryBody {

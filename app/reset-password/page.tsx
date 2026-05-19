@@ -31,7 +31,7 @@ function ResetPasswordInner() {
         setErr(json.error ?? "Алдаа");
         return;
       }
-      router.push("/login");
+      router.push("/profile");
     } catch {
       setErr("Сүлжээний алдаа.");
     } finally {
@@ -59,8 +59,8 @@ function ResetPasswordInner() {
           </button>
         </form>
         <p style={{ marginTop: 16 }}>
-          <Link href="/login" style={{ color: "#6d28d9" }}>
-            ← Нэвтрэх
+          <Link href="/profile" style={{ color: "#6d28d9" }}>
+            ← Профайл руу
           </Link>
         </p>
       </div>

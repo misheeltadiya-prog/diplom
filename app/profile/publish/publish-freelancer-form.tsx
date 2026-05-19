@@ -144,7 +144,6 @@ export function PublishFreelancerForm({ onSaved }: PublishFreelancerFormProps) {
 
       <div className={styles.publishFormSection}>
         <h3 className={styles.publishFormSectionTitle}>Үндсэн мэдээлэл</h3>
-        <p className={styles.publishFormHint}>Жагсаалтын карт дээр харагдах гол текстүүд. Хоосон орхивол картын загвар алдагдана.</p>
         <div className={styles.field}>
           <label htmlFor={id("roleTitle")}>Мэргэжил, албан тушаалын гарчиг *</label>
           <input
@@ -200,7 +199,6 @@ export function PublishFreelancerForm({ onSaved }: PublishFreelancerFormProps) {
 
       <div className={styles.publishFormSection}>
         <h3 className={styles.publishFormSectionTitle}>Портфолио</h3>
-        <p className={styles.publishFormHint}>Мөр бүрт нэг линк эсвэл товч тайлбар. Хамгийн ихдээ 20 мөр.</p>
         <div className={styles.field}>
           <label htmlFor={id("portfolio")}>Линк, төслийн нэр</label>
           <textarea
@@ -211,21 +209,6 @@ export function PublishFreelancerForm({ onSaved }: PublishFreelancerFormProps) {
             value={portfolioText}
           />
         </div>
-      </div>
-
-      <div className={styles.publishFormSection}>
-        <label className={styles.publishFormToggle} htmlFor={id("listed")}>
-          <input
-            checked={listedOnDirectory}
-            id={id("listed")}
-            onChange={(e) => setListedOnDirectory(e.target.checked)}
-            type="checkbox"
-          />
-          <span className={styles.publishFormToggleText}>
-            <strong>Freelancers жагсаалтад харуулах</strong>
-            <span>Идэвхгүй бол таны зар нийтийн жагсаалтад гарч ирэхгүй (профайлын тохиргоо хэвээр).</span>
-          </span>
-        </label>
       </div>
 
       <div className={styles.formActions}>
