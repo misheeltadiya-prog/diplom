@@ -1,14 +1,114 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { SessionUser } from "@/lib/auth";
+import { getSectionsForJobDetail, jobCardPreviewFromJob } from "@/lib/job-description-sections";
 import { landingCategories } from "./data";
 import { type DisplayJob, type JobForm, type JobRecord } from "./jobs-types";
-import { avatarToneClasses, companyInitials, companyLogoUrl, findCompanyByName } from "./companies-directory";
+import {
+  avatarToneClasses,
+  companyInitials,
+  findCompanyByName,
+  resolveJobCompanyLogo,
+} from "./companies-directory";
 import styles from "./index-landing.module.css";
 
 const categoryMap = new Map(landingCategories.map((c) => [c.key, c]));
+
+function ModalCloseGlyph() {
+  return (
+    <svg aria-hidden className={styles.applyCloseGlyph} fill="none" height="18" viewBox="0 0 24 24" width="18">
+      <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" strokeLinecap="round" strokeWidth="2.25" />
+    </svg>
+  );
+}
+
+function stripSectionHeading(heading: string) {
+  return heading.replace(/^\d+\.\s*/, "").trim();
+}
+
+function formatPostedAgo(iso: string) {
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return "";
+  const days = Math.floor(ms / (24 * 60 * 60 * 1000));
+  if (days < 1) return "Өнөөдөр";
+  if (days === 1) return "1 өдрийн өмнө";
+  if (days < 30) return `${days} өдрийн өмнө`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} сарын өмнө`;
+  return `${Math.floor(months / 12)} жилийн өмнө`;
+}
+
+function parseBulletLines(body: string) {
+  return body
+    .split(/\n+/)
+    .map((line) => line.replace(/^[\s•\-–—*]+/, "").trim())
+    .filter(Boolean);
+}
+
+function isRequirementsSection(heading: string) {
+  return /шаардлага/i.test(heading);
+}
+
+function SendIcon() {
+  return (
+    <svg aria-hidden fill="none" height="18" viewBox="0 0 24 24" width="18">
+      <path
+        d="m22 2-7 20-4-9-9-4Zm0 0L11 13"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
+function BookmarkIcon() {
+  return (
+    <svg aria-hidden fill="none" height="18" viewBox="0 0 24 24" width="18">
+      <path
+        d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg aria-hidden fill="none" height="14" viewBox="0 0 24 24" width="14">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M12 7v5l3 2" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg aria-hidden fill="none" height="12" viewBox="0 0 24 24" width="12">
+      <path d="M20 6 9 17l-5-5" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+    </svg>
+  );
+}
+
+function BuildingIcon() {
+  return (
+    <svg aria-hidden fill="none" height="15" viewBox="0 0 24 24" width="15">
+      <path
+        d="M4 21V8l8-4 8 4v13M9 21v-4h6v4M9 11h.01M12 11h.01M15 11h.01"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.75"
+      />
+    </svg>
+  );
+}
 
 type ApplyModalProps = {
   job: DisplayJob;
@@ -204,80 +304,215 @@ function JobDetailModal({
   onEdit,
 }: JobDetailModalProps) {
   const category = categoryMap.get(job.categoryKey);
+  const detailSections = getSectionsForJobDetail(job).slice(0, 3);
+  const company = findCompanyByName(job.companyName);
+  const companyLogo = resolveJobCompanyLogo(job, company);
+  const postedLabel = formatPostedAgo(job.createdAt);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  useLayoutEffect(() => {
+    panelRef.current?.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      onClose();
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [onClose]);
 
   return (
-    <div className={styles.applyOverlay} role="dialog" aria-modal="true">
-      <div className={`${styles.applyPanel} ${styles.jobDetailPanel}`}>
-        <button aria-label="Хаах" className={styles.applyCloseBtn} onClick={onClose} type="button">
-          ×
+    <div className={`${styles.applyOverlay} ${styles.applyOverlayJobDetail}`} role="dialog" aria-modal="true">
+      <div className={`${styles.applyPanel} ${styles.jobDetailPanel}`} ref={panelRef}>
+        <button aria-label="Хаах" className={styles.jobDetailCloseBtn} onClick={onClose} type="button">
+          <ModalCloseGlyph />
         </button>
 
-        <div className={styles.applyHeader}>
-          <span className={styles.applyEyebrow}>Ажлын дэлгэрэнгүй</span>
-          <h2 className={styles.applyTitle}>{job.title}</h2>
-          <p className={styles.applyCompany}>
-            {job.companyName} · {job.location}
-          </p>
-        </div>
-
-        <div className={styles.jobDetailMetaGrid}>
-          <article className={styles.jobDetailMetaCard}>
-            <span className={styles.jobDetailMetaLabel}>Цалин</span>
-            <strong className={styles.jobDetailMetaValue}>{job.salary}</strong>
-          </article>
-          <article className={styles.jobDetailMetaCard}>
-            <span className={styles.jobDetailMetaLabel}>Төрөл</span>
-            <strong className={styles.jobDetailMetaValue}>{job.employmentType}</strong>
-          </article>
-          <article className={styles.jobDetailMetaCard}>
-            <span className={styles.jobDetailMetaLabel}>Ангилал</span>
-            <strong className={styles.jobDetailMetaValue}>{category?.name ?? job.categoryKey}</strong>
-          </article>
-          <article className={styles.jobDetailMetaCard}>
-            <span className={styles.jobDetailMetaLabel}>Нийтэлсэн</span>
-            <strong className={styles.jobDetailMetaValue}>{job.createdByName || job.companyName}</strong>
-          </article>
-        </div>
-
-        <section className={styles.jobDetailSection}>
-          <h3 className={styles.jobDetailSectionTitle}>Ажлын тайлбар</h3>
-          <p className={styles.jobDetailDescription}>{job.description}</p>
-        </section>
-
-        <section className={styles.jobDetailSection}>
-          <h3 className={styles.jobDetailSectionTitle}>Чиглэл ба ур чадвар</h3>
-          <div className={styles.jobDetailTagList}>
-            {job.tags.map((tag) => (
-              <span className={styles.jobCardNewTag} key={tag}>
-                {tag}
+        <header className={styles.jobDetailHeroBanner}>
+          <span className={styles.jobDetailCategoryBadge}>{category?.name ?? job.categoryKey}</span>
+          <h2 className={styles.jobDetailHeroTitle}>{job.title}</h2>
+          <div className={styles.jobDetailHeroMetaRow}>
+            <span className={styles.jobDetailHeroMetaItem}>
+              <BuildingIcon />
+              {job.companyName}
+            </span>
+            <span className={styles.jobDetailHeroMetaItem}>
+              <LocationIcon />
+              {job.location}
+            </span>
+            {postedLabel ? (
+              <span className={styles.jobDetailHeroMetaItem}>
+                <ClockIcon />
+                {postedLabel}
               </span>
-            ))}
+            ) : null}
           </div>
-        </section>
+        </header>
 
-        <div className={styles.jobDetailActions}>
-          {canManage ? (
-            <>
-              <button className={styles.jobDetailSecondaryBtn} onClick={onEdit} type="button">
-                Засах
+        <div className={styles.jobDetailContentWrap}>
+          <main className={styles.jobDetailMainColumn}>
+            <div className={styles.jobDetailMainCard}>
+              <div className={styles.jobDetailTimeline}>
+                {detailSections.map((sec, idx) => {
+                  const bullets = parseBulletLines(sec.body);
+                  const reqItems = isRequirementsSection(sec.heading)
+                    ? bullets.length > 0
+                      ? bullets.slice(0, 4)
+                      : [sec.body.trim()].filter(Boolean)
+                    : [];
+
+                  return (
+                    <article className={styles.jobDetailTimelineSection} key={`${sec.heading}-${idx}`}>
+                      <div className={styles.jobDetailTimelineRail}>
+                        <span className={styles.jobDetailTimelineNum}>{idx + 1}</span>
+                      </div>
+                      <div className={styles.jobDetailTimelineBody}>
+                        <h3 className={styles.jobDetailTimelineTitle}>{stripSectionHeading(sec.heading)}</h3>
+                        {isRequirementsSection(sec.heading) ? (
+                          <div className={styles.jobDetailReqGrid}>
+                            {reqItems.map((item) => (
+                              <div className={styles.jobDetailReqCard} key={item}>
+                                <span className={styles.jobDetailReqCheck} aria-hidden>
+                                  <CheckIcon />
+                                </span>
+                                <span>{item}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : idx === 0 && bullets.length > 1 ? (
+                          <>
+                            {bullets[0] ? <p className={styles.jobDetailTimelineIntro}>{bullets[0]}</p> : null}
+                            <ul className={styles.jobDetailTimelineList}>
+                              {bullets.slice(1).map((line) => (
+                                <li key={line}>{line}</li>
+                              ))}
+                            </ul>
+                          </>
+                        ) : (
+                          <p className={styles.jobDetailTimelineText}>{sec.body}</p>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+
+              {job.tags.length > 0 ? (
+                <section className={styles.jobDetailSkillsInline}>
+                  <h3 className={styles.jobDetailSkillsTitle}>Чиглэл ба ур чадвар</h3>
+                  <div className={styles.jobDetailTagList}>
+                    {job.tags.map((tag) => (
+                      <span className={styles.jobCardNewTag} key={tag}>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+            </div>
+          </main>
+
+          <aside className={styles.jobDetailSidebar}>
+            <section className={styles.jobDetailApplyBox}>
+              <button
+                className={styles.jobDetailPrimaryBtn}
+                disabled={job.source !== "database"}
+                onClick={onApplyClick}
+                type="button"
+              >
+                <span>{applied ? "Өргөдөл илгээсэн ✓" : "Өргөдөл илгээх"}</span>
+                <SendIcon />
               </button>
-              <button className={styles.jobDetailDangerBtn} onClick={onDelete} type="button">
-                Устгах
+              <button className={styles.jobDetailSaveBtn} onClick={onClose} type="button">
+                <BookmarkIcon />
+                <span>Хадгалах</span>
               </button>
-            </>
-          ) : (
-            <button className={styles.jobDetailSecondaryBtn} onClick={onClose} type="button">
-              Хаах
-            </button>
-          )}
-          <button className={styles.applySubmitBtn} disabled={job.source !== "database"} onClick={onApplyClick} type="button">
-            {applied ? "Өргөдөл илгээсэн ✓" : "Өргөдөл илгээх"}
-          </button>
-          {applicationStatus ? (
-            <p className={styles.applyHint} style={{ marginTop: "0.75rem", textAlign: "center" }}>
-              Таны өргөдлийн төлөв: <strong>{statusLabel(applicationStatus)}</strong>
-            </p>
-          ) : null}
+              {applicationStatus ? (
+                <p className={styles.jobDetailApplyStatus}>
+                  Таны өргөдлийн төлөв: <strong>{statusLabel(applicationStatus)}</strong>
+                </p>
+              ) : null}
+
+              <h4 className={styles.jobDetailKeyInfoHeading}>Гол мэдээлэл</h4>
+              <div className={styles.jobDetailMetaGrid}>
+                <article className={styles.jobDetailMetaCard}>
+                  <span className={styles.jobDetailMetaLabel}>Цалин</span>
+                  <strong className={styles.jobDetailMetaValue}>{job.salary}</strong>
+                </article>
+                <article className={styles.jobDetailMetaCard}>
+                  <span className={styles.jobDetailMetaLabel}>Төрөл</span>
+                  <strong className={styles.jobDetailMetaValue}>{job.employmentType}</strong>
+                </article>
+                <article className={styles.jobDetailMetaCard}>
+                  <span className={styles.jobDetailMetaLabel}>Байршил</span>
+                  <strong className={styles.jobDetailMetaValue}>{job.location}</strong>
+                </article>
+                <article className={styles.jobDetailMetaCard}>
+                  <span className={styles.jobDetailMetaLabel}>Ангилал</span>
+                  <strong className={styles.jobDetailMetaValue}>{category?.name ?? job.categoryKey}</strong>
+                </article>
+              </div>
+            </section>
+
+            <section className={styles.jobDetailCompanyBox}>
+              <div className={styles.jobDetailCompanyHead}>
+                <div className={styles.jobDetailCompanyLogoWrap}>
+                  {companyLogo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img alt="" className={styles.jobDetailCompanyLogo} src={companyLogo} />
+                  ) : (
+                    <span className={styles.jobDetailCompanyLogoFallback}>{companyInitials(job.companyName)}</span>
+                  )}
+                </div>
+                <div>
+                  <div className={styles.jobDetailCompanyName}>{job.companyName}</div>
+                  {job.companyDomain?.trim() ? (
+                    <a
+                      className={styles.jobDetailCompanyDomain}
+                      href={`https://${job.companyDomain.trim()}`}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      {job.companyDomain.trim()}
+                    </a>
+                  ) : (
+                    <span className={styles.jobDetailCompanyDomainMuted}>
+                      {job.companyName.toLowerCase().replace(/\s+/g, ".")}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <dl className={styles.jobDetailCompanyFacts}>
+                <div className={styles.jobDetailCompanyFact}>
+                  <dt>Ажилчдын тоо</dt>
+                  <dd>500+</dd>
+                </div>
+                <div className={styles.jobDetailCompanyFact}>
+                  <dt>Байршил</dt>
+                  <dd>{job.location}</dd>
+                </div>
+                <div className={styles.jobDetailCompanyFact}>
+                  <dt>Ажлын төрөл</dt>
+                  <dd>{job.employmentType}</dd>
+                </div>
+              </dl>
+            </section>
+
+            {canManage ? (
+              <section className={styles.jobDetailManageBox}>
+                <button className={styles.jobDetailEditBtn} onClick={onEdit} type="button">
+                  Засах
+                </button>
+                <button className={styles.jobDetailDangerBtn} onClick={onDelete} type="button">
+                  Устгах
+                </button>
+              </section>
+            ) : null}
+          </aside>
         </div>
       </div>
     </div>
@@ -292,6 +527,10 @@ type JobCardProps = {
   editJob: JobForm;
   submitting: boolean;
   applicationStatus?: "pending" | "accepted" | "rejected";
+  deepLinkJobId?: string | null;
+  detailsCloseSignal?: number;
+  onDeepLinkJobConsumed?: () => void;
+  onVoiceJobDetailClosed?: () => void;
   onDeleteJob: (jobId: string) => void;
   onToggleFavorite: (jobId: string) => void;
   onEditFieldChange: (update: JobForm) => void;
@@ -328,6 +567,10 @@ export function JobCard({
   editJob,
   submitting,
   applicationStatus,
+  deepLinkJobId = null,
+  detailsCloseSignal = 0,
+  onDeepLinkJobConsumed,
+  onVoiceJobDetailClosed,
   onDeleteJob,
   onToggleFavorite,
   onEditFieldChange,
@@ -341,7 +584,21 @@ export function JobCard({
   const [localApplied, setLocalApplied] = useState(false);
   const applied = applicationStatus !== undefined || localApplied;
 
+  useEffect(() => {
+    if (deepLinkJobId === job.id) {
+      setShowDetails(true);
+      onDeepLinkJobConsumed?.();
+    }
+  }, [deepLinkJobId, job.id, onDeepLinkJobConsumed]);
+
+  useEffect(() => {
+    if (detailsCloseSignal > 0) {
+      setShowDetails(false);
+    }
+  }, [detailsCloseSignal]);
+
   const company = findCompanyByName(job.companyName);
+  const companyLogoSrc = resolveJobCompanyLogo(job, company);
   const toneKey = avatarToneClasses[(Math.abs(job.companyName.length) + job.id.length) % avatarToneClasses.length];
   const toneClass = styles[toneKey];
   const jobIsNew = isNew(job.createdAt);
@@ -349,6 +606,11 @@ export function JobCard({
     job.source === "database" &&
     (currentUser?.role === "admin" ||
       (typeof currentUser?.id === "number" && job.createdByUserId === currentUser.id));
+
+  function handleCloseDetails() {
+    setShowDetails(false);
+    onVoiceJobDetailClosed?.();
+  }
 
   if (isEditing) {
     return (
@@ -398,18 +660,24 @@ export function JobCard({
         <div className={styles.jobCardNewTop}>
           <div className={styles.jobCardNewLogoWrap}>
             <span className={`${styles.jobCompanyAvatar} ${toneClass || ""}`}>
-              {company ? (
+              {companyLogoSrc ? (
                 <img
                   alt={`${job.companyName} logo`}
                   className={styles.jobCompanyAvatarImage}
                   onError={(e) => {
                     e.currentTarget.style.display = "none";
+                    const fallback = e.currentTarget.nextElementSibling as HTMLSpanElement | null;
+                    if (fallback) fallback.style.display = "inline-flex";
                   }}
-                  src={companyLogoUrl(company.domain)}
+                  src={companyLogoSrc}
                 />
-              ) : (
-                <span className={styles.jobCompanyAvatarInitials}>{companyInitials(job.companyName)}</span>
-              )}
+              ) : null}
+              <span
+                className={styles.jobCompanyAvatarInitials}
+                style={companyLogoSrc ? { display: "none" } : undefined}
+              >
+                {companyInitials(job.companyName)}
+              </span>
             </span>
             <div className={styles.jobCardNewCompanyInfo}>
               <span className={styles.jobCardNewCompanyName}>{job.companyName}</span>
@@ -449,7 +717,7 @@ export function JobCard({
           ) : null}
         </div>
 
-        <p className={styles.jobCardNewDesc}>{job.description}</p>
+        <p className={styles.jobCardNewDesc}>{jobCardPreviewFromJob(job)}</p>
 
         <div className={styles.jobCardNewFooter}>
           <div className={styles.jobCardNewSalary}>{job.salary}</div>
@@ -475,19 +743,19 @@ export function JobCard({
           job={job}
           onApplyClick={() => {
             if (job.source !== "database") {
-              onToast("Demo Ð·Ð°Ñ€ Ð´ÑÑÑ€ ÑˆÑƒÑƒÐ´ Ó©Ñ€Ð³Ó©Ð´Ó©Ð» Ð¸Ð»Ð³ÑÑÑ…Ð³Ò¯Ð¹. Database Ð·Ð°Ñ€Ñ‹Ð³ ÑÐ¾Ð½Ð³Ð¾Ð½Ð¾ ÑƒÑƒ.");
+              onToast("Demo зар дээр шууд өргөдөл илгээхгүй. Database зарынг сонгоно уу.");
               return;
             }
             setShowDetails(false);
             setShowApply(true);
           }}
-          onClose={() => setShowDetails(false)}
+          onClose={handleCloseDetails}
           onDelete={() => {
-            setShowDetails(false);
+            handleCloseDetails();
             onDeleteJob(job.id);
           }}
           onEdit={() => {
-            setShowDetails(false);
+            handleCloseDetails();
             onStartEdit(job);
           }}
         />
@@ -524,6 +792,11 @@ type JobsListCardsProps = {
   submitting: boolean;
   applicationStatusByJobId?: Record<string, "pending" | "accepted" | "rejected">;
   emptyHint?: string;
+  deepLinkJobId?: string | null;
+  detailsCloseSignal?: number;
+  onDeepLinkJobConsumed?: () => void;
+  onVoiceJobDetailClosed?: () => void;
+  mineOnly?: boolean;
   onDeleteJob: (jobId: string) => void;
   onToggleFavorite: (jobId: string) => void;
   onPageChange: (page: number) => void;
@@ -547,6 +820,10 @@ export function JobsListCards({
   submitting,
   applicationStatusByJobId,
   emptyHint,
+  deepLinkJobId = null,
+  detailsCloseSignal = 0,
+  onDeepLinkJobConsumed,
+  onVoiceJobDetailClosed,
   onDeleteJob,
   onToggleFavorite,
   onPageChange,
@@ -569,11 +846,15 @@ export function JobsListCards({
               key={job.id}
               applicationStatus={applicationStatusByJobId?.[job.id]}
               currentUser={currentUser}
+              deepLinkJobId={deepLinkJobId}
+              detailsCloseSignal={detailsCloseSignal}
               editJob={editJob}
               favoriteJobIds={favoriteJobIds}
               isEditing={editingId === job.id}
               job={job}
               onCancelEdit={onCancelEdit}
+              onDeepLinkJobConsumed={onDeepLinkJobConsumed}
+              onVoiceJobDetailClosed={onVoiceJobDetailClosed}
               onDeleteJob={onDeleteJob}
               onEditFieldChange={onEditFieldChange}
               onSaveEdit={onSaveEdit}

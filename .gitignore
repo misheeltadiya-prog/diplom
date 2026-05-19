@@ -6,5 +6,8 @@ dist
 playwright-report
 test-results
 credentials/
+scripts/dev-stripe-env.ps1
 tsconfig.tsbuildinfo
 .tmp-dev-*.log
+public/uploads/*
+!public/uploads/.gitkeep

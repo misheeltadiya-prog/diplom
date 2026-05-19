@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { logger } from "@/lib/logger";
 import { getSiteUrl } from "@/lib/site-url";
 
 export function isSmtpConfigured(): boolean {
@@ -13,7 +14,7 @@ export async function sendTransactionalEmail(opts: {
 }): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
   if (!isSmtpConfigured()) {
     if (process.env.NODE_ENV === "production") {
-      console.warn("[mail] SMTP_HOST/SMTP_USER тохируулаагүй — и-мэйл илгээгдэхгүй.");
+      logger.warn("smtp_not_configured", { hint: "SMTP_HOST/SMTP_USER" });
     }
     return { ok: false, skipped: true };
   }
@@ -42,7 +43,7 @@ export async function sendTransactionalEmail(opts: {
     return { ok: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    console.error("[mail] send failed:", msg);
+    logger.error("mail_send_failed", { error: msg, to: opts.to });
     return { ok: false, error: msg };
   }
 }

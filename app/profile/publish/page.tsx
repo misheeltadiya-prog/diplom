@@ -42,7 +42,7 @@ export default async function ProfilePublishPage() {
           >
             Freelancer-ээр нэвтрэх
           </Link>
-          <BackButton />
+          <BackButton role={user.role} />
         </div>
       </section>
     );
@@ -52,12 +52,13 @@ export default async function ProfilePublishPage() {
     <section className={styles.sectionCard}>
       <div className={styles.sectionHead}>
         <div>
-          <h1 className={styles.sectionTitle}>Portfolio &amp; жагсаалт</h1>
+          <h1 className={styles.sectionTitle}>Зар оруулах · засах</h1>
           <p className={styles.muted}>
-            Мэдээллээ бөглөөд «Жагсаалтад харуулах» идэвхжүүлбэл Freelancers хуудас дээр харагдана.
+            Энд зассан мэдээлэл Freelancers жагсаалтын карт дээр шууд тусгагдана. Профайл CV-аас (мэргэжил, ур чадвар,
+            цалингийн хүлээлт) хадгалбал зарын талбаруудтай автоматаар синклэгдэнэ. Зураг — Тохиргоо хэсгээс.
           </p>
         </div>
-        <BackButton />
+        <BackButton role={user.role} />
       </div>
       <PublishFreelancerForm />
     </section>

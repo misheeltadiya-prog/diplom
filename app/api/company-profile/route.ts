@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -51,11 +52,15 @@ export async function GET() {
       website: string;
       description: string;
       city?: string;
+      banner_url?: string;
+      logo_url?: string;
     }[];
     try {
       const [r] = (await db.execute(
         `SELECT user_id, company_name, industry, website, description,
-                IFNULL(city, '') AS city
+                IFNULL(city, '') AS city,
+                IFNULL(banner_url, '') AS banner_url,
+                IFNULL(logo_url, '') AS logo_url
          FROM company_profiles WHERE user_id = ? LIMIT 1`,
         [user.id],
       )) as [
@@ -66,6 +71,8 @@ export async function GET() {
           website: string;
           description: string;
           city: string;
+          banner_url: string;
+          logo_url: string;
         }[],
         unknown,
       ];
@@ -88,7 +95,7 @@ export async function GET() {
         }[],
         unknown,
       ];
-      rows = r.map((row) => ({ ...row, city: "" }));
+      rows = r.map((row) => ({ ...row, city: "", banner_url: "", logo_url: "" }));
     }
     return NextResponse.json({ ok: true, profile: rows[0] ?? null });
   } catch (err: unknown) {
@@ -168,7 +175,10 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ ok: true });
+    revalidatePath("/companies");
+    revalidatePath("/");
+
+    return NextResponse.json({ ok: true, listedOnDirectory: true });
   } catch (err: unknown) {
     return NextResponse.json({ ok: false, error: mysqlErrorToUserMessage(err) }, { status: 500 });
   }

@@ -10,6 +10,46 @@ type SettingsFormProps = {
   initialPhone: string;
 };
 
+function UserFieldIcon() {
+  return (
+    <svg aria-hidden fill="none" viewBox="0 0 24 24" width="18" height="18">
+      <path
+        d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm-8 9a8 8 0 0 1 16 0"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function MailFieldIcon() {
+  return (
+    <svg aria-hidden fill="none" viewBox="0 0 24 24" width="18" height="18">
+      <path
+        d="M4 6h16v12H4V6Zm0 0 8 6 8-6"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function PhoneFieldIcon() {
+  return (
+    <svg aria-hidden fill="none" viewBox="0 0 24 24" width="18" height="18">
+      <path
+        d="M6.5 3h3l1.5 4.5-2 1.5a12 12 0 0 0 5.5 5.5l1.5-2L21 14.5v3a2 2 0 0 1-2 2A17 17 0 0 1 3 5a2 2 0 0 1 2-2Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function SettingsForm({
   initialFullName,
   initialEmail,
@@ -46,7 +86,7 @@ export function SettingsForm({
         return;
       }
 
-      setMessage("Profile мэдээлэл амжилттай шинэчлэгдлээ.");
+      setMessage("Мэдээлэл амжилттай шинэчлэгдлээ.");
       router.refresh();
     } catch {
       setError("Сервертэй холбогдох үед алдаа гарлаа.");
@@ -58,42 +98,63 @@ export function SettingsForm({
   return (
     <form className={styles.formGrid} onSubmit={handleSubmit}>
       <div className={styles.field}>
-        <label htmlFor="settings-full-name">Нэр</label>
-        <input
-          id="settings-full-name"
-          name="fullName"
-          onChange={(event) => setFullName(event.target.value)}
-          value={fullName}
-        />
+        <label htmlFor="settings-full-name">Бүтэн нэр</label>
+        <div className={styles.fpInputWrap}>
+          <span className={styles.fpInputIcon}>
+            <UserFieldIcon />
+          </span>
+          <input
+            id="settings-full-name"
+            className={styles.fpInput}
+            name="fullName"
+            onChange={(event) => setFullName(event.target.value)}
+            value={fullName}
+          />
+        </div>
       </div>
 
-      <div className={styles.field}>
-        <label htmlFor="settings-email">Gmail / Имэйл</label>
-        <input
-          id="settings-email"
-          name="email"
-          onChange={(event) => setEmail(event.target.value)}
-          type="email"
-          value={email}
-        />
+      <div className={styles.settingsFormRow2}>
+        <div className={styles.field}>
+          <label htmlFor="settings-email">Gmail / Имэйл</label>
+          <div className={styles.fpInputWrap}>
+            <span className={styles.fpInputIcon}>
+              <MailFieldIcon />
+            </span>
+            <input
+              id="settings-email"
+              className={styles.fpInput}
+              name="email"
+              onChange={(event) => setEmail(event.target.value)}
+              type="email"
+              value={email}
+            />
+          </div>
+        </div>
+
+        <div className={styles.field}>
+          <label htmlFor="settings-phone">Утасны дугаар</label>
+          <div className={styles.fpInputWrap}>
+            <span className={styles.fpInputIcon}>
+              <PhoneFieldIcon />
+            </span>
+            <input
+              id="settings-phone"
+              className={styles.fpInput}
+              name="phone"
+              onChange={(event) => setPhone(event.target.value)}
+              value={phone}
+            />
+          </div>
+        </div>
       </div>
 
-      <div className={styles.field}>
-        <label htmlFor="settings-phone">Утасны дугаар</label>
-        <input
-          id="settings-phone"
-          name="phone"
-          onChange={(event) => setPhone(event.target.value)}
-          value={phone}
-        />
-      </div>
+      {message ? <span className={styles.formMessage}>{message}</span> : null}
+      {error ? <span className={styles.formError}>{error}</span> : null}
 
-      <div className={styles.formActions}>
+      <div className={styles.settingsFormActionsRight}>
         <button className={styles.primaryButton} disabled={pending} type="submit">
           {pending ? "Хадгалж байна..." : "Өөрчлөлтийг хадгалах"}
         </button>
-        {message ? <span className={styles.formMessage}>{message}</span> : null}
-        {error ? <span className={styles.formError}>{error}</span> : null}
       </div>
     </form>
   );

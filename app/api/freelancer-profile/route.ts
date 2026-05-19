@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { maxPortfolioItems } from "@/lib/subscription-tier";
+import { getCanonicalPlanForUser } from "@/services/subscriptionService";
 
 type ProfilePayload = {
   roleTitle?: string;
@@ -74,9 +76,19 @@ export async function POST(request: Request) {
 
     const db = getDb();
     const skillsJson = JSON.stringify(body.skills ?? []);
-    const portfolioJson = JSON.stringify(
-      (body.portfolio ?? []).filter((s) => typeof s === "string" && s.trim()).slice(0, 20),
-    );
+    const tier = await getCanonicalPlanForUser(currentUser.id);
+    const maxP = maxPortfolioItems(tier);
+    const portfolioItems = (body.portfolio ?? []).filter((s) => typeof s === "string" && s.trim());
+    if (portfolioItems.length > maxP) {
+      return NextResponse.json(
+        {
+          error: `Portfolio хамгийн ихдээ ${maxP} зүйл (${tier.toUpperCase()} багц).`,
+          needSubscription: true,
+        },
+        { status: 403 },
+      );
+    }
+    const portfolioJson = JSON.stringify(portfolioItems.slice(0, maxP));
     const listed = body.listedOnDirectory === true ? 1 : 0;
 
     try {

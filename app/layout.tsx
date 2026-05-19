@@ -1,5 +1,14 @@
 import type { Metadata } from "next";
+import { AiAssistantFab } from "@/components/ai-assistant-fab";
+import { AppFooter } from "@/components/app-footer";
+import ClickSpark from "@/components/click-spark";
 import "./globals.css";
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL?.trim() || "http://localhost:3000"),
@@ -34,7 +43,17 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <div className="siteRoot">
+          <div className="siteMain">
+            <ClickSpark sparkColor="rgba(124, 58, 237, 0.85)" sparkCount={10} sparkRadius={18} sparkSize={11} duration={400}>
+              {children}
+            </ClickSpark>
+          </div>
+          <AppFooter />
+        </div>
+        <AiAssistantFab />
+      </body>
     </html>
   );
 }

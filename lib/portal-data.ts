@@ -1,5 +1,6 @@
 import { getDb } from "@/lib/db";
 import { listJobs } from "@/lib/jobs-store";
+import { fixMojibakeMaybe } from "@/lib/text-normalize";
 
 export type EmployeeRecord = {
   id: number;
@@ -41,14 +42,14 @@ type EmployeeRow = {
 function mapEmployee(row: EmployeeRow): EmployeeRecord {
   return {
     id: row.id,
-    fullName: row.full_name,
-    roleTitle: row.role_title,
-    email: row.email,
-    phone: row.phone,
-    skills: row.skills,
-    bio: row.bio,
+    fullName: fixMojibakeMaybe(row.full_name),
+    roleTitle: fixMojibakeMaybe(row.role_title),
+    email: fixMojibakeMaybe(row.email),
+    phone: fixMojibakeMaybe(row.phone),
+    skills: fixMojibakeMaybe(row.skills),
+    bio: fixMojibakeMaybe(row.bio),
     createdAt: row.created_at.toISOString(),
-    createdByName: row.created_by_name,
+    createdByName: row.created_by_name ? fixMojibakeMaybe(row.created_by_name) : null,
   };
 }
 

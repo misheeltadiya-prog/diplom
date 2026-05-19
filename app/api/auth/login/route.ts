@@ -6,6 +6,8 @@ import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 type LoginPayload = {
   email?: string;
   password?: string;
+  /** `/login?role=…`-аас илгээгдэнэ: таарахгүй бол session үүсгэхгүй. */
+  intentRole?: string;
 };
 
 type LoginRow = {
@@ -81,12 +83,35 @@ export async function POST(request: Request) {
       );
     }
 
-    await createSession(user.id);
-
     const roleOut =
       user.role === "freelancer" || user.role === "admin" || user.role === "company"
         ? (user.role as "freelancer" | "admin" | "company")
         : "client";
+
+    const intentRaw = typeof body.intentRole === "string" ? body.intentRole.trim() : "";
+    if (intentRaw === "company" && roleOut !== "company" && roleOut !== "admin") {
+      return NextResponse.json(
+        {
+          code: "ROLE_INTENT_MISMATCH",
+          error:
+            "Энэ данс company бүртгэл биш. Ажлын зар оруулахын тулд /register?role=company-оор шинээр бүртгүүлээд тэр дансаар нэвтэрнэ үү.",
+        },
+        { status: 403 },
+      );
+    }
+    if (intentRaw === "freelancer" && roleOut !== "freelancer" && roleOut !== "admin") {
+      return NextResponse.json(
+        {
+          code: "ROLE_INTENT_MISMATCH",
+          error:
+            "Энэ данс freelancer бүртгэл биш. /register?role=freelancer-оор шинээр бүртгүүлээд нэвтэрнэ үү.",
+        },
+        { status: 403 },
+      );
+    }
+
+    await createSession(user.id);
+
     return NextResponse.json({ ok: true, role: roleOut });
   } catch (error) {
     return NextResponse.json(

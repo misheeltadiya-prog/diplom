@@ -1,0 +1,537 @@
+/* Double-slider auth — purple theme, inspired by Florin Pop challenge */
+
+.page,
+.page *,
+.page *::before,
+.page *::after {
+  box-sizing: border-box;
+}
+
+.page {
+  min-height: 100dvh;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 24px 16px 80px;
+  background: #f5f3ff;
+  font-family: var(--auth-font, "DM Sans", system-ui, sans-serif);
+}
+
+.topBrand {
+  position: absolute;
+  top: 20px;
+  left: 24px;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: #5b21b6;
+  font-weight: 900;
+  font-size: 1.1rem;
+  letter-spacing: -0.03em;
+}
+
+.topBrandLogo {
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(91, 33, 182, 0.15));
+}
+
+.topBrandCircle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+  border: 2px solid rgba(109, 40, 217, 0.35);
+}
+
+.kicker {
+  margin: 0 0 18px;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #6d28d9;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.container {
+  box-sizing: border-box;
+  background: #fafafa;
+  border-radius: 14px;
+  box-shadow:
+    0 14px 28px rgba(91, 33, 182, 0.18),
+    0 10px 10px rgba(15, 23, 42, 0.08);
+  position: relative;
+  overflow: hidden;
+  width: min(880px, 100%);
+  max-width: 100%;
+  min-height: 520px;
+}
+
+.formContainer {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  transition: all 0.55s ease-in-out;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.signInContainer {
+  left: 0;
+  width: 50%;
+  z-index: 2;
+}
+
+.container[data-panel="signup"] .signInContainer {
+  transform: translateX(100%);
+}
+
+.signUpContainer {
+  left: 0;
+  width: 50%;
+  opacity: 0;
+  z-index: 1;
+}
+
+.container[data-panel="signup"] .signUpContainer {
+  transform: translateX(100%);
+  opacity: 1;
+  z-index: 5;
+  animation: authShow 0.55s;
+}
+
+@keyframes authShow {
+  0%,
+  49.99% {
+    opacity: 0;
+    z-index: 1;
+  }
+  50%,
+  100% {
+    opacity: 1;
+    z-index: 5;
+  }
+}
+
+.formInner {
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 28px 36px 32px;
+  min-height: 100%;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.formInner h1 {
+  font-weight: 800;
+  margin: 0 0 6px;
+  font-size: 1.65rem;
+  color: #1e1b4b;
+}
+
+.formInner > span.sub {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0 0 14px;
+}
+
+.field {
+  background: #f1f5f9;
+  border: none;
+  padding: 12px 15px;
+  margin: 6px 0;
+  width: 100%;
+  max-width: 100%;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+  color: #0f172a;
+  box-sizing: border-box;
+}
+
+.field:focus {
+  outline: 2px solid rgba(124, 58, 237, 0.45);
+  outline-offset: 0;
+}
+
+.linkForgot {
+  color: #6d28d9;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  margin: 10px 0 6px;
+  align-self: flex-start;
+}
+
+.linkForgot:hover {
+  text-decoration: underline;
+}
+
+.btnSolid {
+  border-radius: 22px;
+  border: 1px solid #7c3aed;
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 12px 42px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: transform 0.08s ease-in;
+  font-family: inherit;
+}
+
+.btnSolid:active {
+  transform: scale(0.97);
+}
+
+.btnSolid:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btnSolid:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}
+
+.oauthStack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 16px;
+}
+
+.oauthBtn {
+  width: 100%;
+  border-radius: 12px;
+  border: 1.5px solid #ddd6fe;
+  background: #fff;
+  color: #5b21b6;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.oauthBtn:hover {
+  background: #faf5ff;
+  border-color: #c4b5fd;
+}
+
+.oauthHint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.overlayContainer {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 50%;
+  height: 100%;
+  overflow: hidden;
+  transition: transform 0.55s ease-in-out;
+  z-index: 100;
+}
+
+.container[data-panel="signup"] .overlayContainer {
+  transform: translateX(-100%);
+}
+
+.overlay {
+  background: linear-gradient(120deg, #5b21b6 0%, #7c3aed 45%, #a855f7 100%);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: 0 0;
+  color: #fff;
+  position: relative;
+  left: -100%;
+  height: 100%;
+  width: 200%;
+  transform: translateX(0);
+  transition: transform 0.55s ease-in-out;
+}
+
+.container[data-panel="signup"] .overlay {
+  transform: translateX(50%);
+}
+
+.overlayPanel {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 0 32px;
+  text-align: center;
+  top: 0;
+  height: 100%;
+  width: 50%;
+  transform: translateX(0);
+  transition: transform 0.55s ease-in-out;
+  box-sizing: border-box;
+}
+
+.overlayLogo {
+  margin-bottom: 20px;
+  filter: brightness(0) invert(1);
+  opacity: 0.95;
+}
+
+.overlayPanel h1 {
+  color: #fff;
+  font-size: clamp(1.35rem, 2.5vw, 1.85rem);
+}
+
+.overlayPanel p {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.55;
+  letter-spacing: 0.02em;
+  margin: 16px 0 26px;
+  color: rgba(255, 255, 255, 0.92);
+  max-width: 28ch;
+}
+
+.overlayLeft {
+  left: 0;
+  transform: translateX(-18%);
+}
+
+.container[data-panel="signup"] .overlayLeft {
+  transform: translateX(0);
+}
+
+.overlayRight {
+  right: 0;
+  left: auto;
+  transform: translateX(0);
+}
+
+.container[data-panel="signup"] .overlayRight {
+  transform: translateX(18%);
+}
+
+.ghost {
+  border-radius: 22px;
+  background: transparent;
+  border: 2px solid #fff;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 11px 38px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease;
+}
+
+.ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.ghost:active {
+  transform: scale(0.97);
+}
+
+.errorMsg {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.roleIntentCallout {
+  margin: 0 0 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(180, 83, 9, 0.35);
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.roleIntentCalloutTitle {
+  margin: 0 0 6px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #92400e;
+}
+
+.roleIntentCalloutBody {
+  margin: 0 0 10px;
+  font-size: 0.82rem;
+  color: #78350f;
+  line-height: 1.45;
+}
+
+.roleIntentActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.roleIntentPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: #6d28d9;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.roleIntentSecondary {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #92400e;
+  text-decoration: underline;
+}
+
+.demoBox {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px dashed rgba(124, 58, 237, 0.35);
+  background: #faf5ff;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.demoTitle {
+  font-size: 11px;
+  font-weight: 800;
+  color: #6d28d9;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.demoSelect {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #e9d5ff;
+  font: inherit;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.demoBtn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(124, 58, 237, 0.35);
+  background: #f3e8ff;
+  color: #5b21b6;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.demoBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.footer a {
+  color: #6d28d9;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 720px) {
+  .container {
+    min-height: unset;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .formContainer,
+  .signInContainer,
+  .signUpContainer {
+    position: relative;
+    width: 100%;
+    left: 0 !important;
+    transform: none !important;
+    opacity: 1 !important;
+    z-index: 1 !important;
+    animation: none !important;
+  }
+
+  .container[data-panel="signup"] .signInContainer {
+    display: none;
+  }
+
+  .container[data-panel="signin"] .signUpContainer {
+    display: none;
+  }
+
+  .overlayContainer {
+    display: none;
+  }
+
+  .mobileToggle {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    padding: 12px;
+    background: linear-gradient(120deg, #5b21b6, #7c3aed);
+  }
+
+  .mobileToggle button {
+    flex: 1;
+    max-width: 200px;
+  }
+}
+
+@media (min-width: 721px) {
+  .mobileToggle {
+    display: none;
+  }
+}

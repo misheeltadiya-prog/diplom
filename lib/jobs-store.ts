@@ -3,6 +3,9 @@ import type { ResultSetHeader } from "mysql2";
 import type { Pool } from "mysql2/promise";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { parseSalaryAmount } from "@/lib/salary-amount";
+import { fixMojibake } from "@/lib/text-normalize";
+import { websiteToDomain } from "@/lib/website-domain";
 
 export type JobPayload = {
   title: string;
@@ -24,6 +27,12 @@ export type StoredJob = {
   createdAt: string;
   createdByName: string | null;
   createdByUserId: number | null;
+  createdByAvatarUrl: string | null;
+  companyDomain: string | null;
+  companyProfileUserId: number | null;
+  companyLogoUrl: string | null;
+  companyBannerUrl: string | null;
+  applicantCount: number;
 };
 
 type JobsSchema = "zeel" | "diplom";
@@ -60,6 +69,11 @@ type ZeelJobRow = {
   description: string;
   created_at: Date | string;
   created_by_name: string | null;
+  created_by_avatar_url: string | null;
+  company_website: string | null;
+  company_profile_user_id: number | null;
+  company_logo_url: string | null;
+  company_banner_url: string | null;
 };
 
 type DiplomJobRow = {
@@ -71,6 +85,8 @@ type DiplomJobRow = {
   status: string;
   createdAt: Date | string;
   created_by_name: string | null;
+  created_by_avatar_url?: string | null;
+  company_website?: string | null;
 };
 
 declare global {
@@ -91,14 +107,12 @@ function toIsoString(value: Date | string) {
 }
 
 function parseBudgetFromSalary(rawSalary: string) {
-  const numeric = rawSalary.replace(/[^\d.,-]/g, "").replace(/,/g, "");
-  const parsed = Number(numeric);
-
+  const parsed = parseSalaryAmount(rawSalary);
   if (!Number.isFinite(parsed) || parsed < 0) {
     return 0;
   }
 
-  return parsed;
+  return Math.round(parsed);
 }
 
 function formatBudget(budget: number) {
@@ -287,9 +301,18 @@ export async function listJobs(): Promise<StoredJob[]> {
   if (info.schema === "zeel") {
     const jobsTable = qualifiedTable(info.databaseName, "job_posts");
     const usersTable = qualifiedTable(info.databaseName, "users");
+    const applicationsTable = qualifiedTable(info.databaseName, "job_applications");
+    const companyProfilesTable = qualifiedTable(info.databaseName, "company_profiles");
+    const subsTable = qualifiedTable(info.databaseName, "user_subscriptions");
 
-  const [rows] = (await db.query(
-      `
+    const applicantCountSql = `
+          (
+            SELECT COUNT(*)
+            FROM ${applicationsTable} ja
+            WHERE ja.job_id COLLATE utf8mb4_unicode_ci = CAST(j.id AS CHAR) COLLATE utf8mb4_unicode_ci
+          ) AS applicant_count,`;
+
+    const buildZeelJobsSql = (withApplicantCount: boolean) => `
         SELECT
           j.id,
           j.created_by,
@@ -300,24 +323,89 @@ export async function listJobs(): Promise<StoredJob[]> {
           j.salary,
           j.description,
           j.created_at,
-          u.full_name AS created_by_name
+          u.full_name AS created_by_name,
+          IFNULL(u.avatar_url, '') AS created_by_avatar_url,
+          ${withApplicantCount ? applicantCountSql : "0 AS applicant_count,"}
+          (
+            SELECT cp.website
+            FROM ${companyProfilesTable} cp
+            WHERE cp.user_id = j.created_by
+               OR LOWER(TRIM(cp.company_name)) = LOWER(TRIM(j.company_name))
+            ORDER BY CASE WHEN cp.user_id = j.created_by THEN 0 ELSE 1 END
+            LIMIT 1
+          ) AS company_website,
+          (
+            SELECT cp.user_id
+            FROM ${companyProfilesTable} cp
+            WHERE cp.user_id = j.created_by
+               OR LOWER(TRIM(cp.company_name)) = LOWER(TRIM(j.company_name))
+            ORDER BY CASE WHEN cp.user_id = j.created_by THEN 0 ELSE 1 END
+            LIMIT 1
+          ) AS company_profile_user_id,
+          (
+            SELECT IFNULL(cp.logo_url, '')
+            FROM ${companyProfilesTable} cp
+            WHERE cp.user_id = j.created_by
+               OR LOWER(TRIM(cp.company_name)) = LOWER(TRIM(j.company_name))
+            ORDER BY CASE WHEN cp.user_id = j.created_by THEN 0 ELSE 1 END
+            LIMIT 1
+          ) AS company_logo_url,
+          (
+            SELECT IFNULL(cp.banner_url, '')
+            FROM ${companyProfilesTable} cp
+            WHERE cp.user_id = j.created_by
+               OR LOWER(TRIM(cp.company_name)) = LOWER(TRIM(j.company_name))
+            ORDER BY CASE WHEN cp.user_id = j.created_by THEN 0 ELSE 1 END
+            LIMIT 1
+          ) AS company_banner_url,
+          (
+            CASE LOWER(IFNULL(us.plan_key, ''))
+              WHEN 'premium' THEN 100
+              WHEN 'pro' THEN 100
+              WHEN 'standard' THEN 50
+              WHEN 'business' THEN 50
+              WHEN 'basic' THEN 10
+              ELSE 10
+            END
+          ) AS boost_score
         FROM ${jobsTable} j
         LEFT JOIN ${usersTable} u ON u.id = j.created_by
-        ORDER BY j.created_at DESC
-      `,
-    )) as [ZeelJobRow[], unknown];
+        LEFT JOIN ${subsTable} us ON us.user_id = j.created_by
+        ORDER BY boost_score DESC, j.created_at DESC
+      `;
+
+    let rows: (ZeelJobRow & { boost_score?: number; applicant_count?: number })[];
+
+    try {
+      [rows] = (await db.query(buildZeelJobsSql(true))) as [
+        (ZeelJobRow & { boost_score?: number; applicant_count?: number })[],
+        unknown,
+      ];
+    } catch (error) {
+      console.error("[listJobs] applicant count query failed, falling back:", error);
+      [rows] = (await db.query(buildZeelJobsSql(false))) as [
+        (ZeelJobRow & { boost_score?: number; applicant_count?: number })[],
+        unknown,
+      ];
+    }
 
     return rows.map((row) => ({
       id: String(row.id),
-      title: row.title,
-      companyName: row.company_name,
-      location: row.location,
-      employmentType: row.employment_type,
-      salary: row.salary,
-      description: row.description,
+      title: fixMojibake(row.title),
+      companyName: fixMojibake(row.company_name),
+      location: fixMojibake(row.location),
+      employmentType: fixMojibake(row.employment_type),
+      salary: fixMojibake(row.salary),
+      description: fixMojibake(row.description),
       createdAt: toIsoString(row.created_at),
-      createdByName: row.created_by_name,
+      createdByName: row.created_by_name ? fixMojibake(row.created_by_name) : null,
       createdByUserId: row.created_by,
+      createdByAvatarUrl: row.created_by_avatar_url?.trim() || null,
+      companyDomain: websiteToDomain(row.company_website ?? ""),
+      companyProfileUserId: row.company_profile_user_id ?? null,
+      companyLogoUrl: row.company_logo_url?.trim() || null,
+      companyBannerUrl: row.company_banner_url?.trim() || null,
+      applicantCount: Number(row.applicant_count ?? 0),
     }));
   }
 
@@ -346,15 +434,21 @@ export async function listJobs(): Promise<StoredJob[]> {
 
     return {
       id: row.id,
-      title: row.title,
-      companyName: decodedCategory.companyName,
-      location: decodedCategory.location,
-      employmentType: row.status || "open",
-      salary: formatBudget(row.budget),
-      description: row.description,
+      title: fixMojibake(row.title),
+      companyName: fixMojibake(decodedCategory.companyName),
+      location: fixMojibake(decodedCategory.location),
+      employmentType: fixMojibake(row.status || "open"),
+      salary: fixMojibake(formatBudget(row.budget)),
+      description: fixMojibake(row.description),
       createdAt: toIsoString(row.createdAt),
-      createdByName: row.created_by_name,
+      createdByName: row.created_by_name ? fixMojibake(row.created_by_name) : null,
       createdByUserId: null,
+      createdByAvatarUrl: null,
+      companyDomain: null,
+      companyProfileUserId: null,
+      companyLogoUrl: null,
+      companyBannerUrl: null,
+      applicantCount: 0,
     };
   });
 }
@@ -374,6 +468,21 @@ export async function getJobOwnerUserId(jobId: string) {
   ];
 
   return rows[0]?.created_by ?? null;
+}
+
+/** Компанийн идэвхтэй зарын тоо — subscription хязгаар шалгахад. */
+export async function countActiveJobsForUser(userId: number): Promise<number> {
+  const db = getDb();
+  const info = await detectJobsSchema(db);
+  if (info.schema !== "zeel") {
+    return 0;
+  }
+  const jobsTable = qualifiedTable(info.databaseName, "job_posts");
+  const [rows] = (await db.execute(
+    `SELECT COUNT(*) AS c FROM ${jobsTable} WHERE created_by = ?`,
+    [userId],
+  )) as [{ c: number }[], unknown];
+  return Number(rows[0]?.c ?? 0);
 }
 
 export async function createJob(input: JobPayload, opts?: { createdByUserId?: number }) {

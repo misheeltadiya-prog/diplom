@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import styles from "../profile.module.css";
 
 type ProfileRow = Record<string, unknown>;
@@ -45,6 +45,9 @@ type PublishFreelancerFormProps = {
 };
 
 export function PublishFreelancerForm({ onSaved }: PublishFreelancerFormProps) {
+  const formId = useId();
+  const id = (name: string) => `${formId}-${name}`;
+
   const [roleTitle, setRoleTitle] = useState("");
   const [shortDescription, setShortDescription] = useState("");
   const [detailDescription, setDetailDescription] = useState("");
@@ -121,7 +124,7 @@ export function PublishFreelancerForm({ onSaved }: PublishFreelancerFormProps) {
         setErr(j.error ?? "Хадгалахад алдаа");
         return;
       }
-      setMsg("Хадгалагдлаа.");
+      setMsg("Амжилттай хадгалагдлаа.");
       onSaved?.();
     } catch {
       setErr("Сүлжээний алдаа");
@@ -131,53 +134,105 @@ export function PublishFreelancerForm({ onSaved }: PublishFreelancerFormProps) {
   }
 
   if (loading) {
-    return <p className={styles.muted}>Ачаалж байна…</p>;
+    return <p className={styles.publishFormLoading}>Мэдээллийг ачаалж байна…</p>;
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: "grid", gap: 14, maxWidth: 560, marginTop: 16 }}>
-      {err ? <p className={styles.errorMsg}>{err}</p> : null}
-      {msg ? <p className={styles.muted}>{msg}</p> : null}
-      <label style={{ display: "grid", gap: 6 }}>
-        <span className={styles.muted}>Мэргэжил / гарчиг *</span>
-        <input
-          onChange={(e) => setRoleTitle(e.target.value)}
-          placeholder="Жишээ: UX Designer"
-          required
-          value={roleTitle}
-        />
-      </label>
-      <label style={{ display: "grid", gap: 6 }}>
-        <span className={styles.muted}>Товч тайлбар</span>
-        <input onChange={(e) => setShortDescription(e.target.value)} value={shortDescription} />
-      </label>
-      <label style={{ display: "grid", gap: 6 }}>
-        <span className={styles.muted}>Дэлгэрэнгүй</span>
-        <textarea onChange={(e) => setDetailDescription(e.target.value)} rows={4} value={detailDescription} />
-      </label>
-      <label style={{ display: "grid", gap: 6 }}>
-        <span className={styles.muted}>Ур чадвар (таслалаар)</span>
-        <input onChange={(e) => setSkills(e.target.value)} value={skills} />
-      </label>
-      <label style={{ display: "grid", gap: 6 }}>
-        <span className={styles.muted}>Үнэ / хугацаа (жишээ нь &quot;50k₮/цаг&quot;)</span>
-        <input onChange={(e) => setPriceLabel(e.target.value)} value={priceLabel} />
-      </label>
-      <label style={{ display: "grid", gap: 6 }}>
-        <span className={styles.muted}>Portfolio (мөр бүрт нэг линк эсвэл товч тайлбар)</span>
-        <textarea onChange={(e) => setPortfolioText(e.target.value)} rows={5} value={portfolioText} />
-      </label>
-      <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
-        <input
-          checked={listedOnDirectory}
-          onChange={(e) => setListedOnDirectory(e.target.checked)}
-          type="checkbox"
-        />
-        <span className={styles.muted}>Freelancers жагсаалтад харуулах</span>
-      </label>
-      <button disabled={saving} type="submit">
-        {saving ? "Хадгалж…" : "Хадгалах"}
-      </button>
+    <form className={styles.publishForm} onSubmit={onSubmit}>
+      {err ? <p className={`${styles.publishFormAlert} ${styles.publishFormAlertError}`}>{err}</p> : null}
+      {msg ? <p className={`${styles.publishFormAlert} ${styles.publishFormAlertOk}`}>{msg}</p> : null}
+
+      <div className={styles.publishFormSection}>
+        <h3 className={styles.publishFormSectionTitle}>Үндсэн мэдээлэл</h3>
+        <p className={styles.publishFormHint}>Жагсаалтын карт дээр харагдах гол текстүүд. Хоосон орхивол картын загвар алдагдана.</p>
+        <div className={styles.field}>
+          <label htmlFor={id("roleTitle")}>Мэргэжил, албан тушаалын гарчиг *</label>
+          <input
+            id={id("roleTitle")}
+            onChange={(e) => setRoleTitle(e.target.value)}
+            placeholder="Жишээ: Full-stack developer · UI/UX designer"
+            required
+            value={roleTitle}
+          />
+        </div>
+        <div className={styles.field}>
+          <label htmlFor={id("shortDescription")}>Товч танилцуулга</label>
+          <input
+            id={id("shortDescription")}
+            onChange={(e) => setShortDescription(e.target.value)}
+            placeholder="1–2 өгүүлбэрээр өөрийгөө товч тодорхойлно уу"
+            value={shortDescription}
+          />
+        </div>
+        <div className={styles.field}>
+          <label htmlFor={id("detailDescription")}>Дэлгэрэнгүй тайлбар</label>
+          <textarea
+            id={id("detailDescription")}
+            onChange={(e) => setDetailDescription(e.target.value)}
+            placeholder="Туршлага, ажлын арга барил, ямар төрлийн төсөлд тохиромжтойг бичнэ үү"
+            rows={5}
+            value={detailDescription}
+          />
+        </div>
+      </div>
+
+      <div className={styles.publishFormSection}>
+        <h3 className={styles.publishFormSectionTitle}>Ур чадвар ба үнэ</h3>
+        <div className={styles.field}>
+          <label htmlFor={id("skills")}>Ур чадвар</label>
+          <input
+            id={id("skills")}
+            onChange={(e) => setSkills(e.target.value)}
+            placeholder="Таслалаар тусгаарлана: React, TypeScript, Figma"
+            value={skills}
+          />
+        </div>
+        <div className={styles.field}>
+          <label htmlFor={id("priceLabel")}>Үнэ / хугацааны нөхцөл</label>
+          <input
+            id={id("priceLabel")}
+            onChange={(e) => setPriceLabel(e.target.value)}
+            placeholder="Жишээ: 80 000₮/цаг эсвэл төсөлд тохирсон"
+            value={priceLabel}
+          />
+        </div>
+      </div>
+
+      <div className={styles.publishFormSection}>
+        <h3 className={styles.publishFormSectionTitle}>Портфолио</h3>
+        <p className={styles.publishFormHint}>Мөр бүрт нэг линк эсвэл товч тайлбар. Хамгийн ихдээ 20 мөр.</p>
+        <div className={styles.field}>
+          <label htmlFor={id("portfolio")}>Линк, төслийн нэр</label>
+          <textarea
+            id={id("portfolio")}
+            onChange={(e) => setPortfolioText(e.target.value)}
+            placeholder={"https://…\nhttps://…"}
+            rows={5}
+            value={portfolioText}
+          />
+        </div>
+      </div>
+
+      <div className={styles.publishFormSection}>
+        <label className={styles.publishFormToggle} htmlFor={id("listed")}>
+          <input
+            checked={listedOnDirectory}
+            id={id("listed")}
+            onChange={(e) => setListedOnDirectory(e.target.checked)}
+            type="checkbox"
+          />
+          <span className={styles.publishFormToggleText}>
+            <strong>Freelancers жагсаалтад харуулах</strong>
+            <span>Идэвхгүй бол таны зар нийтийн жагсаалтад гарч ирэхгүй (профайлын тохиргоо хэвээр).</span>
+          </span>
+        </label>
+      </div>
+
+      <div className={styles.formActions}>
+        <button className={styles.primaryButton} disabled={saving} type="submit">
+          {saving ? "Хадгалж байна…" : "Хадгалах"}
+        </button>
+      </div>
     </form>
   );
 }

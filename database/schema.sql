@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   full_name VARCHAR(120) NOT NULL,
   phone VARCHAR(40) NOT NULL,
   email VARCHAR(160) NOT NULL,
+  google_id VARCHAR(64) NULL,
   password_hash VARCHAR(255) NOT NULL,
   role ENUM('client', 'freelancer', 'company', 'admin') NOT NULL DEFAULT 'client',
   email_verified TINYINT(1) NOT NULL DEFAULT 0,
@@ -17,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY users_email_unique (email),
+  UNIQUE KEY users_google_id_unique (google_id),
   KEY users_email_verify_token_idx (email_verify_token)
 );
 
@@ -91,11 +93,15 @@ CREATE TABLE IF NOT EXISTS freelancer_profiles (
   detail_description TEXT NOT NULL,
   skills_json TEXT NOT NULL DEFAULT '[]',
   price_label VARCHAR(80) NOT NULL DEFAULT '',
+  stars_label VARCHAR(32) NOT NULL DEFAULT '★★★★★',
   rating VARCHAR(8) NOT NULL DEFAULT '5.0',
   reviews_count VARCHAR(12) NOT NULL DEFAULT '0',
   accent VARCHAR(12) NOT NULL DEFAULT 'lime',
+  badge_label VARCHAR(40) NULL,
+  badge_tone VARCHAR(12) NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
-  portfolio_json TEXT NOT NULL DEFAULT '[]',
+  -- TEXT default is not allowed on some MySQL configs; keep non-null and seed via app/scripts.
+  portfolio_json TEXT NOT NULL,
   listed_on_directory TINYINT(1) NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -113,6 +119,8 @@ CREATE TABLE IF NOT EXISTS company_profiles (
   website VARCHAR(255) NOT NULL DEFAULT '',
   description TEXT NOT NULL,
   city VARCHAR(120) NOT NULL DEFAULT 'Ulaanbaatar',
+  banner_url VARCHAR(512) NOT NULL DEFAULT '',
+  logo_url VARCHAR(512) NOT NULL DEFAULT '',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (user_id),
@@ -143,12 +151,26 @@ CREATE TABLE IF NOT EXISTS job_offers (
 
 CREATE TABLE IF NOT EXISTS user_subscriptions (
   user_id BIGINT UNSIGNED NOT NULL,
-  plan_key VARCHAR(40) NOT NULL DEFAULT 'free',
+  plan_key VARCHAR(40) NOT NULL DEFAULT 'basic' COMMENT 'basic|standard|premium (legacy: free,pro,business)',
   status VARCHAR(40) NOT NULL DEFAULT 'active',
   expires_at DATETIME NULL,
+  started_at DATETIME NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (user_id),
   CONSTRAINT user_subscriptions_user_fk
+    FOREIGN KEY (user_id) REFERENCES users (id)
+    ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS usage_limits (
+  user_id BIGINT UNSIGNED NOT NULL,
+  action_type VARCHAR(40) NOT NULL COMMENT 'apply_job | post_job',
+  usage_date DATE NOT NULL,
+  count INT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (user_id, action_type, usage_date),
+  KEY usage_limits_user_date_idx (user_id, usage_date),
+  CONSTRAINT usage_limits_user_fk
     FOREIGN KEY (user_id) REFERENCES users (id)
     ON DELETE CASCADE
 );
@@ -233,7 +255,7 @@ CREATE TABLE IF NOT EXISTS reviews (
   reviewer_id BIGINT UNSIGNED NOT NULL,
   freelancer_id BIGINT UNSIGNED NOT NULL,
   rating TINYINT NOT NULL,
-  comment TEXT NOT NULL DEFAULT '',
+  comment TEXT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY reviews_freelancer_idx (freelancer_id),
@@ -269,4 +291,39 @@ CREATE TABLE IF NOT EXISTS job_seeker_profiles (
   CONSTRAINT job_seeker_linked_user_fk
     FOREIGN KEY (linked_user_id) REFERENCES users (id)
     ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS payment_escrows (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  payer_user_id BIGINT UNSIGNED NOT NULL,
+  payee_user_id BIGINT UNSIGNED NOT NULL,
+  amount_mnt BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  currency VARCHAR(8) NOT NULL DEFAULT 'MNT',
+  status ENUM('pending', 'funded', 'released', 'refunded', 'cancelled') NOT NULL DEFAULT 'pending',
+  provider ENUM('manual', 'stripe', 'qpay') NOT NULL DEFAULT 'manual',
+  external_ref VARCHAR(120) NOT NULL DEFAULT '',
+  contract_note TEXT NOT NULL,
+  job_offer_id BIGINT UNSIGNED NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY payment_escrows_payer_idx (payer_user_id, status),
+  KEY payment_escrows_payee_idx (payee_user_id, status)
+);
+
+CREATE TABLE IF NOT EXISTS platform_leads (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  kind ENUM('hire', 'join') NOT NULL,
+  full_name VARCHAR(120) NOT NULL DEFAULT '',
+  phone VARCHAR(40) NOT NULL DEFAULT '',
+  email VARCHAR(180) NOT NULL DEFAULT '',
+  job_type VARCHAR(120) NOT NULL DEFAULT '',
+  message TEXT NOT NULL,
+  budget VARCHAR(80) NOT NULL DEFAULT '',
+  duration VARCHAR(80) NOT NULL DEFAULT '',
+  status ENUM('new', 'contacted', 'closed') NOT NULL DEFAULT 'new',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY platform_leads_kind_idx (kind, status),
+  KEY platform_leads_created_idx (created_at)
 );

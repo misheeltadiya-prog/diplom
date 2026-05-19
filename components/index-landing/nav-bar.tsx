@@ -2,25 +2,21 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { SessionUser } from "@/lib/auth";
 import { COMPANY_PENDING_APPLICATIONS_EVENT } from "@/lib/company-applications-events";
-import type { JobRecord } from "@/lib/portal-data";
 import styles from "./index-landing.module.css";
-
-const FAVORITE_JOBS_STORAGE_KEY = "cwork-landing-favorite-job-ids";
 
 type NavBarProps = {
   currentUser?: SessionUser | null;
   scrolled: boolean;
-  savedJobCount: number;
-  onSavedJobsClick: () => void;
-  favoritesViewActive: boolean;
   onFindJob: () => void;
   onFreelancer: () => void;
   onCompany: () => void;
   onAbout: () => void;
+  /** Үндсэн хуудасны «Зар оруулах» sheet нээлттэй үед navbar нуугдана */
+  jobPostComposerOpen?: boolean;
 };
 
 function BellIcon() {
@@ -43,6 +39,37 @@ function ProfileIcon() {
     <svg aria-hidden="true" height="20" viewBox="0 0 24 24" width="20">
       <circle cx="12" cy="8" fill="none" r="4" stroke="currentColor" strokeWidth="2" />
       <path d="M5 19c1.9-3 4.2-4.5 7-4.5s5.1 1.5 7 4.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+    </svg>
+  );
+}
+
+function JobsNavIcon() {
+  return (
+    <svg aria-hidden fill="none" height="20" viewBox="0 0 24 24" width="20">
+      <path
+        d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function FreelancerNavIcon() {
+  return (
+    <svg aria-hidden fill="none" height="20" viewBox="0 0 24 24" width="20">
+      <circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M5 19c1.8-3 4-4.5 7-4.5s5.2 1.5 7 4.5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function CompanyNavIcon() {
+  return (
+    <svg aria-hidden fill="none" height="20" viewBox="0 0 24 24" width="20">
+      <path d="M4 20V9l8-4 8 4v11" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.8" />
+      <path d="M9 20v-5h6v5" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.8" />
     </svg>
   );
 }
@@ -97,21 +124,19 @@ function getInitials(name: string) {
 export function NavBar({
   currentUser = null,
   scrolled,
-  savedJobCount,
-  onSavedJobsClick,
-  favoritesViewActive,
   onFindJob,
   onFreelancer,
   onCompany,
   onAbout,
+  jobPostComposerOpen = false,
 }: NavBarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [profileOpen, setProfileOpen] = useState(false);
-  const [savedJobsOpen, setSavedJobsOpen] = useState(false);
-  const [savedJobs, setSavedJobs] = useState<JobRecord[]>([]);
-  const [savedJobsLoading, setSavedJobsLoading] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  /** Доош чиглэлээр гүйлгэхэд нуугдана; дээш чиглэлээр гүйлгэхэд гарна. */
+  const [navRevealByScroll, setNavRevealByScroll] = useState(true);
+  const lastScrollYRef = useRef(0);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [pendingCompanyApplications, setPendingCompanyApplications] = useState(0);
@@ -119,12 +144,24 @@ export function NavBar({
 
   // Load avatar from server session first, fallback to localStorage cache.
   useEffect(() => {
+    // Migration: Clear old global avatar key once
+    try {
+      const migrated = localStorage.getItem("cwork-avatar-migrated");
+      if (!migrated) {
+        localStorage.removeItem("cwork-user-avatar");
+        localStorage.setItem("cwork-avatar-migrated", "true");
+      }
+    } catch {
+      /* ignore */
+    }
+
     if (currentUser?.avatarUrl?.trim()) {
       setUserAvatar(currentUser.avatarUrl.trim());
       return;
     }
     try {
-      const stored = localStorage.getItem("cwork-user-avatar");
+      const avatarKey = currentUser?.id ? `cwork-user-avatar-${currentUser.id}` : "cwork-user-avatar";
+      const stored = localStorage.getItem(avatarKey);
       if (stored) setUserAvatar(stored);
     } catch { /* ignore */ }
   }, [currentUser?.avatarUrl, currentUser?.id]);
@@ -234,48 +271,63 @@ export function NavBar({
     }
 
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setProfileOpen(false);
+      if (event.key !== "Escape") {
+        return;
       }
+      event.preventDefault();
+      event.stopPropagation();
+      setProfileOpen(false);
     };
 
-    window.addEventListener("keydown", handleEscape);
+    document.addEventListener("keydown", handleEscape, true);
 
     return () => {
-      window.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("keydown", handleEscape, true);
     };
   }, [profileOpen]);
 
-  function openSavedJobs() {
+  useEffect(() => {
     setProfileOpen(false);
-    setSavedJobsOpen(true);
-    setSavedJobsLoading(true);
+  }, [pathname]);
 
-    let savedIds: string[] = [];
-    try {
-      const raw = localStorage.getItem(FAVORITE_JOBS_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as unknown;
-        if (Array.isArray(parsed)) savedIds = parsed.filter((id): id is string => typeof id === "string");
-      }
-    } catch { /* ignore */ }
-
-    if (savedIds.length === 0) {
-      setSavedJobs([]);
-      setSavedJobsLoading(false);
+  useEffect(() => {
+    if (profileOpen || jobPostComposerOpen) {
+      setNavRevealByScroll(true);
       return;
     }
 
-    fetch("/api/jobs", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((data: { jobs?: JobRecord[] }) => {
-        setSavedJobs((data.jobs ?? []).filter((j) => savedIds.includes(j.id)));
-      })
-      .catch(() => {
-        setSavedJobs([]);
-      })
-      .finally(() => setSavedJobsLoading(false));
-  }
+    lastScrollYRef.current =
+      typeof window !== "undefined"
+        ? window.scrollY || document.documentElement.scrollTop || 0
+        : 0;
+
+    const threshold = 6;
+
+    const onScroll = () => {
+      const y = window.scrollY || document.documentElement.scrollTop || 0;
+      const dy = y - lastScrollYRef.current;
+      lastScrollYRef.current = y;
+
+      /* Хамгийн дээд талд үргэлж харуулна */
+      if (y <= 12) {
+        setNavRevealByScroll(true);
+        return;
+      }
+
+      if (Math.abs(dy) < threshold) {
+        return;
+      }
+
+      if (dy > 0) {
+        setNavRevealByScroll(false);
+      } else {
+        setNavRevealByScroll(true);
+      }
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [profileOpen, jobPostComposerOpen]);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -294,19 +346,25 @@ export function NavBar({
 
   return (
     <>
-      <nav className={`${styles.nav} ${scrolled ? styles.navScrolled : ""}`}> 
+      <nav
+        className={`${styles.nav} ${scrolled ? styles.navScrolled : ""} ${
+          !profileOpen && (jobPostComposerOpen || !navRevealByScroll) ? styles.navRevealHidden : ""
+        }`}
+      > 
         <Link aria-label="Home" className={styles.logo} href="/">
           <Image alt="C-Work logo" className={styles.logoImage} height={44} src="/c-work-logo.svg" width={44} />
         </Link>
         <div className={styles.navCenter}>
           <div className={styles.navLinks}>
-            <button
-              className={`${styles.navLinkButton} ${pathname === "/freelancers" ? styles.navLinkButtonActive : ""}`}
-              onClick={onFreelancer}
-              type="button"
-            >
-              FREELANCER
-            </button>
+            {currentUser?.role !== "client" ? (
+              <button
+                className={`${styles.navLinkButton} ${pathname === "/freelancers" ? styles.navLinkButtonActive : ""}`}
+                onClick={onFreelancer}
+                type="button"
+              >
+                FREELANCER
+              </button>
+            ) : null}
             <button
               className={`${styles.navLinkButton} ${pathname === "/jobs" ? styles.navLinkButtonActive : ""}`}
               onClick={onFindJob}
@@ -382,6 +440,7 @@ export function NavBar({
         className={`${styles.navProfileDrawer} ${profileOpen ? styles.navProfileDrawerOpen : ""}`}
         id="index-profile-drawer"
         role="dialog"
+        aria-modal="true"
       >
         <div className={styles.navProfileDrawerTop}>
           <div className={styles.navProfileDrawerIntro}>
@@ -398,6 +457,7 @@ export function NavBar({
           </button>
         </div>
 
+        <div className={styles.navProfileDrawerScroll}>
         <Link
           className={`${styles.navProfileSummary} ${currentUser?.role === "company" && pendingCompanyApplications > 0 ? styles.navProfileSummaryHasAlert : ""}`}
           href="/profile"
@@ -433,26 +493,6 @@ export function NavBar({
             </Link>
           ) : null}
           {currentUser?.role === "company" ? (
-            <Link className={styles.navProfileLink} href="/profile#company-applications" onClick={() => setProfileOpen(false)}>
-              <span className={styles.navProfileLinkIcon}>
-                <span style={{ fontWeight: 800, fontSize: "0.85rem" }}>≡</span>
-              </span>
-              <span className={styles.navProfileLinkCopy}>
-                <strong>
-                  Ирсэн өргөдлүүд
-                  {pendingCompanyApplications > 0 ? (
-                    <span className={styles.navProfileLinkBadge} title="Шийдвэр хүлээж буй">
-                      {pendingCompanyApplications > 99 ? "99+" : pendingCompanyApplications}
-                    </span>
-                  ) : null}
-                </strong>
-                <span style={{ display: "block", fontSize: "0.75rem", color: "#7b7486", fontWeight: 600 }}>
-                  Хүлээн авах / татгалзах
-                </span>
-              </span>
-            </Link>
-          ) : null}
-          {currentUser?.role === "company" ? (
             <Link className={styles.navProfileLink} href="/profile/company" onClick={() => setProfileOpen(false)}>
               <span className={styles.navProfileLinkIcon}>
                 <span style={{ fontWeight: 800, fontSize: "0.85rem" }}>C</span>
@@ -467,22 +507,24 @@ export function NavBar({
           ) : null}
           {currentUser ? (
             <>
-              <Link className={styles.navProfileLink} href="/profile/upgrade" onClick={() => setProfileOpen(false)}>
-                <span className={styles.navProfileLinkIcon}>
-                  <span style={{ fontWeight: 800, fontSize: "0.85rem" }}>*</span>
-                </span>
-                <span className={styles.navProfileLinkCopy}>
-                  <strong>
-                    Upgrade
-                    {unreadNotifications > 0 ? (
-                      <span className={styles.navProfileLinkBadge}>{unreadNotifications}</span>
-                    ) : null}
-                  </strong>
-                  <span style={{ display: "block", fontSize: "0.75rem", color: "#7b7486", fontWeight: 600 }}>
-                    Subscription
+              {currentUser.role !== "client" ? (
+                <Link className={styles.navProfileLink} href="/profile/upgrade" onClick={() => setProfileOpen(false)}>
+                  <span className={styles.navProfileLinkIcon}>
+                    <span style={{ fontWeight: 800, fontSize: "0.85rem" }}>*</span>
                   </span>
-                </span>
-              </Link>
+                  <span className={styles.navProfileLinkCopy}>
+                    <strong>
+                      Upgrade
+                      {unreadNotifications > 0 ? (
+                        <span className={styles.navProfileLinkBadge}>{unreadNotifications}</span>
+                      ) : null}
+                    </strong>
+                    <span style={{ display: "block", fontSize: "0.75rem", color: "#7b7486", fontWeight: 600 }}>
+                      Subscription
+                    </span>
+                  </span>
+                </Link>
+              ) : null}
               {currentUser.role === "freelancer" ? (
                 <Link
                   className={styles.navProfileLink}
@@ -506,7 +548,7 @@ export function NavBar({
                     </span>
                   </span>
                 </Link>
-              ) : currentUser.role !== "company" ? (
+              ) : currentUser.role !== "company" && currentUser.role !== "client" ? (
                 <Link className={styles.navProfileLink} href="/freelancers" onClick={() => setProfileOpen(false)}>
                   <span className={styles.navProfileLinkIcon}>
                     <span style={{ fontWeight: 800, fontSize: "0.85rem" }}>{">"}</span>
@@ -518,22 +560,6 @@ export function NavBar({
               ) : null}
             </>
           ) : null}
-
-          <button
-            className={`${styles.navProfileLink} ${favoritesViewActive ? styles.navProfileLinkActive : ""}`}
-            onClick={() => { openSavedJobs(); }}
-            type="button"
-          >
-            <span className={styles.navProfileLinkIcon}>
-              <Image alt="" aria-hidden height={20} src="/heart-favorite.svg" width={20} />
-            </span>
-            <span className={styles.navProfileLinkCopy}>
-              <strong>
-                Saved Jobs
-                {savedJobCount > 0 ? <span className={styles.navProfileLinkBadge}>{savedJobCount}</span> : null}
-              </strong>
-            </span>
-          </button>
 
           <Link className={styles.navProfileLink} href="/profile/settings" onClick={() => setProfileOpen(false)}>
             <span className={styles.navProfileLinkIcon}>
@@ -553,6 +579,7 @@ export function NavBar({
             </span>
           </Link>
         </div>
+        </div>
 
         <div className={styles.navProfileBottom}>
           {currentUser ? (
@@ -571,76 +598,35 @@ export function NavBar({
           )}
         </div>
       </aside>
-      {/* Saved Jobs Panel */}
-      {savedJobsOpen ? (
-        <div className={styles.savedJobsOverlay} onClick={() => setSavedJobsOpen(false)} role="presentation">
-          <aside
-            className={styles.savedJobsPanel}
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Saved Jobs"
-          >
-            <div className={styles.savedJobsPanelHead}>
-              <span className={styles.savedJobsPanelTitle}>
-                Saved Jobs
-                {savedJobCount > 0 ? <span className={styles.savedJobsPanelCount}>{savedJobCount}</span> : null}
-              </span>
-              <button
-                className={styles.savedJobsPanelClose}
-                onClick={() => setSavedJobsOpen(false)}
-                type="button"
-                aria-label={"\u0425\u0430\u0430\u0445"}
-              >x</button>
-            </div>
 
-            <div className={styles.savedJobsList}>
-              {savedJobsLoading ? (
-                <p className={styles.savedJobsEmpty}>{"\u0410\u0447\u0430\u0430\u043b\u0436 \u0431\u0430\u0439\u043d\u0430..."}</p>
-              ) : savedJobs.length === 0 ? (
-                <p className={styles.savedJobsEmpty}>{"\u0425\u0430\u0434\u0433\u0430\u043b\u0441\u0430\u043d \u0430\u0436\u043b\u044b\u043d \u0437\u0430\u0440 \u0431\u0430\u0439\u0445\u0433\u04af\u0439 \u0431\u0430\u0439\u043d\u0430."}</p>
-              ) : savedJobs.map((job) => (
-                <article className={styles.jobCardNew} key={job.id}>
-                  <div className={styles.jobCardNewTop}>
-                    <div className={styles.jobCardNewLogoWrap}>
-                      <span className={styles.jobCompanyAvatar}>
-                        <span style={{ fontSize: "0.7rem", fontWeight: 800, color: "#6d28d9" }}>
-                          {job.companyName[0]}
-                        </span>
-                      </span>
-                      <div className={styles.jobCardNewCompanyInfo}>
-                        <span className={styles.jobCardNewCompanyName}>{job.companyName}</span>
-                        <div className={styles.jobCardNewBadges}>
-                          <span className={styles.jobCardNewBadgeType}>{job.employmentType}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <Image
-                      alt=""
-                      aria-hidden
-                      className={styles.jobFavoriteIcon}
-                      height={28}
-                      src="/heart-favorite-on.svg"
-                      width={28}
-                    />
-                  </div>
-                  <h3 className={styles.jobCardNewTitle}>{job.title}</h3>
-                  <div className={styles.jobCardNewLocation}>
-                    <svg aria-hidden="true" fill="none" height="13" viewBox="0 0 24 24" width="13">
-                      <path d="M12 20s6-4.5 6-9a6 6 0 1 0-12 0c0 4.5 6 9 6 9Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
-                      <circle cx="12" cy="11" r="2.1" stroke="currentColor" strokeWidth="1.8"/>
-                    </svg>
-                    <span>{job.location}</span>
-                  </div>
-                  <div className={styles.jobCardNewFooter}>
-                    <div className={styles.jobCardNewSalary}>{job.salary}</div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </aside>
-        </div>
-      ) : null}
+      <nav className={styles.mobileBottomNav} aria-label="Үндсэн хуудас">
+        <Link
+          className={`${styles.mobileBottomNavItem} ${pathname === "/jobs" || pathname === "/" ? styles.mobileBottomNavItemActive : ""}`}
+          href="/jobs"
+          onClick={() => setProfileOpen(false)}
+        >
+          <JobsNavIcon />
+          <span>Ажил</span>
+        </Link>
+        {currentUser?.role !== "client" ? (
+          <Link
+            className={`${styles.mobileBottomNavItem} ${pathname === "/freelancers" ? styles.mobileBottomNavItemActive : ""}`}
+            href="/freelancers"
+            onClick={() => setProfileOpen(false)}
+          >
+            <FreelancerNavIcon />
+            <span>Freelancer</span>
+          </Link>
+        ) : null}
+        <Link
+          className={`${styles.mobileBottomNavItem} ${pathname === "/companies" ? styles.mobileBottomNavItemActive : ""}`}
+          href="/companies"
+          onClick={() => setProfileOpen(false)}
+        >
+          <CompanyNavIcon />
+          <span>Компани</span>
+        </Link>
+      </nav>
     </>
   );
 }

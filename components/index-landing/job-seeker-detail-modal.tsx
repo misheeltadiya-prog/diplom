@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { SessionUser } from "@/lib/auth";
 import type { JobSeekerPublic } from "@/lib/job-seekers";
 import type { CvProfile } from "@/lib/profile-cv";
+import profileStyles from "@/app/profile/profile.module.css";
+import { FreelancerReviewsPanel } from "@/components/freelancer-reviews-panel";
 import styles from "./index-landing.module.css";
 
 type JobSeekerDetailModalProps = {
@@ -24,6 +27,12 @@ type ChatMsg = {
 };
 
 const locationPool = ["Улаанбаатар", "Улаанбаатар / Hybrid", "Remote", "Remote / UB", "Дархан", "Эрдэнэт"];
+
+function seekerPhotoSrc(seeker: JobSeekerPublic) {
+  const u = seeker.avatarUrl?.trim();
+  if (u) return u;
+  return `https://i.pravatar.cc/240?img=${(seeker.id % 70) + 1}`;
+}
 
 function buildContact(seeker: JobSeekerPublic) {
   const tail = String(1000 + (seeker.id % 9000)).padStart(4, "0");
@@ -245,6 +254,7 @@ export function JobSeekerDetailModal({ seeker, onClose, currentUser = null }: Jo
   }
 
   return (
+    <>
     <div className={styles.profileDashOverlay} onClick={onClose} role="presentation">
       <div className={styles.profileDashPanel} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <button className={styles.profileDashClose} onClick={onClose} type="button" aria-label="Хаах">✕</button>
@@ -252,7 +262,7 @@ export function JobSeekerDetailModal({ seeker, onClose, currentUser = null }: Jo
         {/* ── Header ── */}
         <div className={styles.profileDashHeader}>
           <img alt={seeker.fullName} className={styles.profileDashAvatar}
-            src={`https://i.pravatar.cc/240?img=${(seeker.id % 70) + 1}`} />
+            src={seekerPhotoSrc(seeker)} />
           <div className={styles.profileDashHeaderInfo}>
             <div className={styles.profileDashHeaderTop}>
               <div>
@@ -270,15 +280,15 @@ export function JobSeekerDetailModal({ seeker, onClose, currentUser = null }: Jo
                       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
                         stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/>
                     </svg>
-                    Chat
+                    Мессеж
                   </button>
                 ) : seeker.linkedUserId === currentUser?.id ? (
                   <span className={styles.profileDashEmptyHint} style={{ fontSize: "0.78rem" }}>
-                    Өөрийн профайл — чат харагдахгүй
+                    Өөрийн профайл — мессеж харагдахгүй
                   </span>
                 ) : !currentUser ? (
                   <span className={styles.profileDashEmptyHint} style={{ fontSize: "0.78rem" }}>
-                    Чатлахын тулд нэвтэрнэ үү
+                    Мессеж илгээхийн тулд нэвтэрнэ үү
                   </span>
                 ) : null}
                 {showCompanyOffer ? (
@@ -414,11 +424,10 @@ export function JobSeekerDetailModal({ seeker, onClose, currentUser = null }: Jo
               </label>
               {offerNote ? <p className={styles.profileDashEmptyHint}>{offerNote}</p> : null}
               <button
-                className={styles.profileDashChatSend}
+                className={`${styles.profileDashChatSend} ${styles.profileDashChatSendWide}`}
                 disabled={offerBusy || !canSendCompanyOffer}
                 onClick={sendOffer}
                 type="button"
-                style={{ width: "100%", justifyContent: "center" }}
               >
                 {offerBusy ? "Илгээж байна…" : canSendCompanyOffer ? "Санал илгээх" : "Илгээх боломжгүй"}
               </button>
@@ -436,52 +445,6 @@ export function JobSeekerDetailModal({ seeker, onClose, currentUser = null }: Jo
                 <li key={p}>{p}</li>
               ))}
             </ul>
-          </div>
-        ) : null}
-
-        {/* ── Inline Chat ── */}
-        {chatOpen && showChat ? (
-          <div className={styles.profileDashChatBox}>
-            <div className={styles.profileDashChatHeader}>
-              <img alt={seeker.fullName} className={styles.profileDashChatAvatar}
-                src={`https://i.pravatar.cc/240?img=${(seeker.id % 70) + 1}`} />
-              <div>
-                <span className={styles.profileDashChatName}>{seeker.fullName}</span>
-                <span className={styles.profileDashChatOnline}>● Онлайн</span>
-              </div>
-            </div>
-            <div className={styles.profileDashChatMessages}>
-              {chatLoading ? (
-                <p className={styles.profileDashEmptyHint} style={{ textAlign: "center", padding: "12px" }}>Ачаалж байна…</p>
-              ) : chatMsgs.length === 0 ? (
-                <p className={styles.profileDashEmptyHint} style={{ textAlign: "center", padding: "12px" }}>Мессеж байхгүй байна. Эхлэн бичнэ үү!</p>
-              ) : chatMsgs.map((msg) => (
-                <div key={msg.id}
-                  className={`${styles.profileDashChatBubbleWrap} ${msg.sender === "me" ? styles.profileDashChatBubbleWrapMe : ""}`}>
-                  <div className={`${styles.profileDashChatBubble} ${msg.sender === "me" ? styles.profileDashChatBubbleMe : styles.profileDashChatBubbleOther}`}>
-                    {msg.text}
-                  </div>
-                  <span className={styles.profileDashChatTime}>{msg.time}</span>
-                </div>
-              ))}
-              <div ref={bottomRef} />
-            </div>
-            <div className={styles.profileDashChatInputRow}>
-              <input
-                className={styles.profileDashChatInput}
-                placeholder="Мессеж бичих..."
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") sendChat(); }}
-                disabled={chatSending}
-              />
-              <button className={styles.profileDashChatSend} onClick={sendChat} type="button" disabled={chatSending}>
-                <svg fill="none" height="16" viewBox="0 0 24 24" width="16">
-                  <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor"
-                    strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/>
-                </svg>
-              </button>
-            </div>
           </div>
         ) : null}
 
@@ -616,7 +579,140 @@ export function JobSeekerDetailModal({ seeker, onClose, currentUser = null }: Jo
             </div>
           </div>
         </div>
+
+        {seeker.linkedUserId ? (
+          <FreelancerReviewsPanel
+            freelancerUserId={seeker.linkedUserId}
+            currentUser={currentUser}
+          />
+        ) : null}
       </div>
     </div>
+
+    {chatOpen && showChat && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            className={profileStyles.chatHistoryOverlay}
+            role="presentation"
+            onClick={() => setChatOpen(false)}
+          >
+            <div
+              className={`${profileStyles.chatHistoryVarRoot} ${profileStyles.chatHistoryModal}`}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Мессеж"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={profileStyles.chatHistoryHeader}>
+                <div>
+                  <strong>Мессеж</strong>
+                  <div className={profileStyles.chatHistorySub}>{seeker.fullName}</div>
+                </div>
+                <button
+                  className={profileStyles.chatHistoryClose}
+                  onClick={() => setChatOpen(false)}
+                  type="button"
+                  aria-label="Хаах"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className={profileStyles.chatHistoryBody}>
+                <aside className={profileStyles.chatHistoryThreads}>
+                  <div
+                    className={`${profileStyles.chatHistoryThreadRow} ${profileStyles.chatHistoryThreadRowActive}`}
+                  >
+                    <div className={profileStyles.chatHistoryAvatar}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img alt="" src={seekerPhotoSrc(seeker)} />
+                    </div>
+                    <div className={profileStyles.chatHistoryThreadMeta}>
+                      <div className={profileStyles.chatHistoryThreadTop}>
+                        <strong>{seeker.fullName}</strong>
+                        <span>Freelancer</span>
+                      </div>
+                      <div className={profileStyles.chatHistoryThreadBottom}>
+                        <span className={profileStyles.chatHistoryThreadPreview}>
+                          {chatMsgs.length > 0
+                            ? chatMsgs[chatMsgs.length - 1]!.text.slice(0, 42)
+                            : seeker.roleTitle.slice(0, 42)}
+                        </span>
+                        <span className={profileStyles.chatHistoryThreadTime}>
+                          {chatMsgs.length > 0 ? chatMsgs[chatMsgs.length - 1]!.time : ""}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </aside>
+
+                <section className={profileStyles.chatHistoryChat}>
+                  <div className={profileStyles.chatHistoryChatTop}>
+                    <div>
+                      <strong>{seeker.fullName}</strong>
+                      <span>{seeker.roleTitle}</span>
+                    </div>
+                  </div>
+
+                  <div className={profileStyles.chatHistoryMessages}>
+                    {chatLoading ? (
+                      <div className={profileStyles.chatHistoryHint}>Ачаалж байна…</div>
+                    ) : null}
+                    {!chatLoading && chatMsgs.length === 0 ? (
+                      <div className={profileStyles.chatHistoryHint}>
+                        Мессеж байхгүй. Эхний мессежээ бичнэ үү.
+                      </div>
+                    ) : null}
+                    {chatMsgs.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`${profileStyles.chatHistoryMsg} ${
+                          msg.sender === "me" ? profileStyles.chatHistoryMsgMe : profileStyles.chatHistoryMsgOther
+                        }`}
+                      >
+                        <div className={profileStyles.chatHistoryBubble}>{msg.text}</div>
+                        <div className={profileStyles.chatHistoryMsgTime}>{msg.time}</div>
+                      </div>
+                    ))}
+                    <div ref={bottomRef} />
+                  </div>
+
+                  <div className={profileStyles.chatHistoryComposer}>
+                    <input
+                      className={profileStyles.chatHistoryInput}
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder="Мессеж бичих…"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") sendChat();
+                      }}
+                      disabled={chatSending}
+                    />
+                    <button
+                      type="button"
+                      className={profileStyles.chatHistoryComposerSend}
+                      aria-label="Илгээх"
+                      disabled={chatSending || !chatInput.trim()}
+                      onClick={sendChat}
+                    >
+                      <svg aria-hidden fill="none" height="18" viewBox="0 0 24 24" width="18">
+                        <path
+                          d="m22 2-7 20-4-9-9-4Zm0 0L11 13"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null}
+    </>
   );
 }

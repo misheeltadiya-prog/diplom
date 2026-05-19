@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { chatConversationId } from "@/lib/chat-conversation";
+import { allDmConversationIds, primaryConversationIdForInsert } from "@/lib/chat-conversation";
 import { CHAT_MESSAGE_MAX_CHARS, ensureChatTable } from "@/lib/chat-db";
-import { chatConversationParams, chatConversationWhere } from "@/lib/chat-queries";
+import {
+  chatConversationParamsMulti,
+  chatConversationWhere,
+  chatConversationWhereMulti,
+} from "@/lib/chat-queries";
 import { getLinkedFreelancerUserIdForChat } from "@/lib/chat-linked-user";
 import { getDb } from "@/lib/db";
 import { notify } from "@/lib/notify";
@@ -25,24 +29,6 @@ type MsgRow = {
   created_at: Date;
 };
 
-function resolveConversationId(opts: {
-  seekerProfileId: number;
-  currentUserId: number;
-  clientUserIdParam: number | null;
-  linkedFreelancerUserId: number | null;
-}): string | null {
-  const { seekerProfileId, currentUserId, clientUserIdParam, linkedFreelancerUserId } = opts;
-
-  if (linkedFreelancerUserId === currentUserId) {
-    if (clientUserIdParam == null || !Number.isFinite(clientUserIdParam)) {
-      return null;
-    }
-    return chatConversationId(seekerProfileId, clientUserIdParam);
-  }
-
-  return chatConversationId(seekerProfileId, currentUserId);
-}
-
 export async function GET(req: Request, context: RouteContext) {
   const { seekerId } = await context.params;
   const seekerProfileId = Number(seekerId);
@@ -60,22 +46,22 @@ export async function GET(req: Request, context: RouteContext) {
     const parsedClientParam = clientUserIdParam ? Number(clientUserIdParam) : null;
 
     const linkedFreelancerUserId = await getLinkedFreelancerUserIdForChat(db, seekerProfileId);
-    const convId = resolveConversationId({
+    const convIds = allDmConversationIds({
       seekerProfileId,
       currentUserId: currentUser.id,
-      clientUserIdParam: parsedClientParam,
       linkedFreelancerUserId,
+      otherUserId: parsedClientParam,
     });
 
-    if (!convId) {
+    if (convIds.length === 0) {
       return NextResponse.json(
         { error: "clientUserId query параметр шаардлагатай (freelancer хариу бичих)." },
         { status: 400 },
       );
     }
 
-    const cw = chatConversationWhere();
-    const cp = chatConversationParams(convId, currentUser.id, seekerProfileId);
+    const cw = convIds.length === 1 ? chatConversationWhere() : chatConversationWhereMulti(convIds);
+    const cp = chatConversationParamsMulti(convIds, currentUser.id, seekerProfileId);
     const [rows] = (await db.execute(
       `SELECT id, sender_id, receiver_id, sender_name, message, IFNULL(conversation_id,'') AS conversation_id, created_at
        FROM chat_messages
@@ -96,7 +82,7 @@ export async function GET(req: Request, context: RouteContext) {
     }));
 
     return NextResponse.json(
-      { ok: true, messages, conversationId: convId },
+      { ok: true, messages, conversationId: convIds[0] ?? "" },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
@@ -141,7 +127,7 @@ export async function POST(req: Request, context: RouteContext) {
     const db = getDb();
     const linkedFreelancerUserId = await getLinkedFreelancerUserIdForChat(db, seekerProfileId);
 
-    const convId = resolveConversationId({
+    const convId = primaryConversationIdForInsert({
       seekerProfileId,
       currentUserId: currentUser.id,
       clientUserIdParam: bodyClientId,

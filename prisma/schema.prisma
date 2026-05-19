@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Job {
+  id             BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  createdBy      BigInt   @map("created_by") @db.UnsignedBigInt
+  title          String   @db.VarChar(180)
+  companyName    String   @map("company_name") @db.VarChar(180)
+  location       String   @map("location") @db.VarChar(120)
+  employmentType String   @map("employment_type") @db.VarChar(60)
+  salary         String   @map("salary") @db.VarChar(60)
+  description    String   @map("description") @db.Text
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+
+  @@map("job_posts")
+}
+
+model CompanyProfile {
+  userId      BigInt   @id @map("user_id") @db.UnsignedBigInt
+  companyName String   @default("") @map("company_name") @db.VarChar(180)
+  industry    String   @default("") @db.VarChar(120)
+  website     String   @default("") @db.VarChar(255)
+  description String   @db.Text
+  city        String   @default("Ulaanbaatar") @db.VarChar(120)
+  bannerUrl   String   @default("") @map("banner_url") @db.VarChar(512)
+  logoUrl     String   @default("") @map("logo_url") @db.VarChar(512)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  @@map("company_profiles")
+}
+
+model PlatformLead {
+  id        BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  kind      String   @db.VarChar(10)
+  fullName  String   @default("") @map("full_name") @db.VarChar(120)
+  phone     String   @default("") @db.VarChar(40)
+  email     String   @default("") @db.VarChar(180)
+  jobType   String   @default("") @map("job_type") @db.VarChar(120)
+  message   String   @db.Text
+  budget    String   @default("") @db.VarChar(80)
+  duration  String   @default("") @db.VarChar(80)
+  status    String   @default("new") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+
+  @@map("platform_leads")
+}
+
+model PaymentEscrow {
+  id           BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  payerUserId  BigInt   @map("payer_user_id") @db.UnsignedBigInt
+  payeeUserId  BigInt   @map("payee_user_id") @db.UnsignedBigInt
+  amountMnt    BigInt   @default(0) @map("amount_mnt") @db.UnsignedBigInt
+  currency     String   @default("MNT") @db.VarChar(8)
+  status       String   @default("pending") @db.VarChar(20)
+  provider     String   @default("manual") @db.VarChar(20)
+  externalRef  String   @default("") @map("external_ref") @db.VarChar(120)
+  contractNote String   @map("contract_note") @db.Text
+  jobOfferId   BigInt?  @map("job_offer_id") @db.UnsignedBigInt
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  @@map("payment_escrows")
+}

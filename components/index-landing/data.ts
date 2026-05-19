@@ -36,7 +36,7 @@ export const freelancerCards = [
     stars: "★★★★★",
     rating: "4.9",
     reviews: "42",
-    price: "₮85K",
+    price: "20,000₮/цаг",
   },
   {
     initials: "С",
@@ -50,7 +50,7 @@ export const freelancerCards = [
     stars: "★★★★★",
     rating: "4.8",
     reviews: "28",
-    price: "₮70K",
+    price: "25,000₮/цаг",
   },
   {
     initials: "Э",
@@ -64,7 +64,7 @@ export const freelancerCards = [
     stars: "★★★★★",
     rating: "5.0",
     reviews: "15",
-    price: "₮90K",
+    price: "30,000₮/цаг",
   },
   {
     initials: "Н",
@@ -78,7 +78,7 @@ export const freelancerCards = [
     stars: "★★★★☆",
     rating: "4.7",
     reviews: "61",
-    price: "₮40K",
+    price: "15,000₮/цаг",
   },
   {
     initials: "Г",
@@ -92,7 +92,7 @@ export const freelancerCards = [
     stars: "★★★★★",
     rating: "4.9",
     reviews: "19",
-    price: "₮75K",
+    price: "20,000₮/цаг",
   },
   {
     initials: "М",
@@ -106,7 +106,7 @@ export const freelancerCards = [
     stars: "★★★★☆",
     rating: "4.6",
     reviews: "34",
-    price: "₮55K",
+    price: "25,000₮/цаг",
   },
 ];
 

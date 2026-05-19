@@ -1,14 +1,13 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { SessionUser } from "@/lib/auth";
 import { landingCategories, type LandingCategoryKey } from "./data";
 import { FreelancerPublishSheet } from "./freelancer-publish-sheet";
 import { JobsListSection } from "./jobs-list-section";
-import { LeadModal } from "./lead-modal";
+import { LeadModal, type LeadFormPayload } from "./lead-modal";
 import { NavBar } from "./nav-bar";
-import { SiteFooter } from "./site-footer";
 import { Toast } from "./toast";
 import styles from "./index-landing.module.css";
 
@@ -20,11 +19,23 @@ type IndexLandingPageProps = {
 
 export function IndexLandingPage({ currentUser = null }: IndexLandingPageProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const mineOnly = searchParams.get("mine") === "1";
   const appliedJobsOnly = searchParams.get("applied") === "1";
+  const openJobIdFromUrl = searchParams.get("job");
+
+  const consumeOpenJobIdFromUrl = useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (!params.has("job")) return;
+    params.delete("job");
+    const q = params.toString();
+    router.replace(`${pathname}${q ? `?${q}` : ""}`, { scroll: false });
+  }, [router, searchParams, pathname]);
   const [modalMode, setModalMode] = useState<"hire" | "join" | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [leadSubmitting, setLeadSubmitting] = useState(false);
+  const [leadError, setLeadError] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<
@@ -36,7 +47,6 @@ export function IndexLandingPage({ currentUser = null }: IndexLandingPageProps) 
   const [isScrolled, setIsScrolled] = useState(false);
   const jobsComposerRef = useRef<HTMLDivElement | null>(null);
   const [favoriteJobIds, setFavoriteJobIds] = useState<string[]>([]);
-  const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   useEffect(() => {
     if (!toastMessage) {
@@ -49,15 +59,22 @@ export function IndexLandingPage({ currentUser = null }: IndexLandingPageProps) 
 
   useEffect(() => {
     const hash = window.location.hash;
-    if (hash === "#jobs-content" || hash === "#jobs" || searchParams.get("applied") === "1") {
+    const applied = searchParams.get("applied") === "1";
+
+    if (applied) {
       const id = window.setTimeout(() => {
-        const el =
-          document.getElementById("jobs-content") ??
-          document.getElementById("jobs");
-        el?.scrollIntoView({ behavior: "smooth", block: "start" });
+        document.getElementById("jobs-content")?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 80);
       return () => window.clearTimeout(id);
     }
+
+    if (hash === "#jobs" || hash === "#jobs-content") {
+      const id = window.setTimeout(() => {
+        document.getElementById("jobs")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+      return () => window.clearTimeout(id);
+    }
+
     return undefined;
   }, [searchParams]);
 
@@ -132,15 +149,6 @@ export function IndexLandingPage({ currentUser = null }: IndexLandingPageProps) 
     );
   }
 
-  function handleSavedJobsNav() {
-    setFavoritesOnly((open) => !open);
-    window.requestAnimationFrame(() => {
-      document
-        .getElementById("jobs-content")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  }
-
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 40);
 
@@ -190,16 +198,36 @@ export function IndexLandingPage({ currentUser = null }: IndexLandingPageProps) 
 
   function openModal(mode: "hire" | "join") {
     setSubmitted(false);
+    setLeadError(null);
     setModalMode(mode);
   }
 
   function closeModal() {
     setModalMode(null);
     setSubmitted(false);
+    setLeadError(null);
   }
 
-  function submitModal() {
-    setSubmitted(true);
+  async function submitModal(payload: LeadFormPayload) {
+    setLeadSubmitting(true);
+    setLeadError(null);
+    try {
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok || !data.ok) {
+        setLeadError(data.error ?? "Илгээхэд алдаа гарлаа.");
+        return;
+      }
+      setSubmitted(true);
+    } catch {
+      setLeadError("Сүлжээний алдаа. Дахин оролдоно уу.");
+    } finally {
+      setLeadSubmitting(false);
+    }
   }
 
   useEffect(() => {
@@ -239,7 +267,6 @@ export function IndexLandingPage({ currentUser = null }: IndexLandingPageProps) 
     <div className={styles.page}>
       <NavBar
         currentUser={currentUser}
-        favoritesViewActive={favoritesOnly}
         onAbout={() => {
           document
             .getElementById("contact")
@@ -249,16 +276,13 @@ export function IndexLandingPage({ currentUser = null }: IndexLandingPageProps) 
           router.push("/companies");
         }}
         onFindJob={() => {
-          document
-            .getElementById("jobs-content")
-            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+          document.getElementById("jobs")?.scrollIntoView({ behavior: "smooth", block: "start" });
         }}
         onFreelancer={() => {
           router.push("/freelancers");
         }}
-        onSavedJobsClick={handleSavedJobsNav}
-        savedJobCount={favoriteJobIds.length}
         scrolled={isScrolled}
+        jobPostComposerOpen={showPostJobComposer}
       />
 
       <JobsListSection
@@ -266,14 +290,16 @@ export function IndexLandingPage({ currentUser = null }: IndexLandingPageProps) 
         composerRef={jobsComposerRef}
         currentUser={currentUser}
         favoriteJobIds={favoriteJobIds}
-        favoritesOnly={favoritesOnly}
+        favoritesOnly={false}
         mineOnly={mineOnly}
         onComposerClose={() => setShowPostJobComposer(false)}
+        onConsumeOpenJobIdFromUrl={consumeOpenJobIdFromUrl}
         onOpenFreelancerPublish={() => setShowFreelancerPublish(true)}
         onOpenJobComposer={() => setShowPostJobComposer(true)}
         onToast={showToast}
         onToggleFavorite={toggleFavoriteJob}
         onVisibleCountChange={setVisibleJobsCount}
+        openJobIdFromUrl={openJobIdFromUrl}
         searchValue={searchValue}
         selectedCategory={selectedCategory}
         showComposer={showPostJobComposer}
@@ -288,10 +314,11 @@ export function IndexLandingPage({ currentUser = null }: IndexLandingPageProps) 
         onSaved={() => router.refresh()}
         open={showFreelancerPublish}
       />
-      <SiteFooter />
       <LeadModal
         mode={modalMode}
         submitted={submitted}
+        submitting={leadSubmitting}
+        error={leadError}
         onClose={closeModal}
         onSubmit={submitModal}
       />

@@ -1,26 +1,15 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { getDb } from "@/lib/db";
 import { mysqlErrorToUserMessage } from "@/lib/mysql-errors";
+import { getEffectiveSubscription, setUserPlan, type PlanKey } from "@/lib/user-subscription";
 
-async function ensureTable() {
-  const db = getDb();
-  await db.execute(`
-    CREATE TABLE IF NOT EXISTS user_subscriptions (
-      user_id BIGINT UNSIGNED NOT NULL,
-      plan_key VARCHAR(40) NOT NULL DEFAULT 'free',
-      status VARCHAR(40) NOT NULL DEFAULT 'active',
-      expires_at DATETIME NULL,
-      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      PRIMARY KEY (user_id),
-      CONSTRAINT user_subscriptions_user_fk
-        FOREIGN KEY (user_id) REFERENCES users (id)
-        ON DELETE CASCADE
-    )
-  `);
+/** POST: зөвхөн үнэгүй (basic) руу шилжүүлэх — бусад төлөвлөгөө Stripe. */
+function parseFreePlanKey(raw: unknown): PlanKey | null {
+  if (raw === "basic" || raw === "free") return "basic";
+  return null;
 }
 
-/** Төлбөрийн систем холбогдоогүй — төлөвлөгөө сонгох placeholder */
+/** GET: одоогийн subscription (basic|standard|premium). POST: зөвхөн BASIC — төлбөртэйг Stripe. */
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) {
@@ -28,19 +17,12 @@ export async function GET() {
   }
 
   try {
-    await ensureTable();
-    const db = getDb();
-    const [rows] = (await db.execute(
-      `SELECT plan_key, status, expires_at FROM user_subscriptions WHERE user_id = ? LIMIT 1`,
-      [user.id],
-    )) as [{ plan_key: string; status: string; expires_at: Date | null }[], unknown];
-
-    const row = rows[0];
+    const sub = await getEffectiveSubscription(user.id);
     return NextResponse.json({
       ok: true,
-      plan: row?.plan_key ?? "free",
-      status: row?.status ?? "active",
-      expiresAt: row?.expires_at ? new Date(row.expires_at).toISOString() : null,
+      plan: sub.planKey,
+      status: sub.status,
+      expiresAt: sub.expiresAt ? sub.expiresAt.toISOString() : null,
     });
   } catch (e) {
     return NextResponse.json(
@@ -56,21 +38,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Нэвтрэх шаардлагатай." }, { status: 401 });
   }
 
-  const body = (await request.json()) as { planKey?: string };
-  const planKey = body.planKey === "pro" || body.planKey === "business" ? body.planKey : "free";
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ ok: false, error: "JSON буруу байна." }, { status: 400 });
+  }
+
+  const planKey = parseFreePlanKey((body as { planKey?: unknown }).planKey);
+  if (!planKey) {
+    return NextResponse.json(
+      { ok: false, error: "Зөвхөн planKey: basic эсвэл free (Үнэгүй) илгээнэ үү. Төлбөртэйг Stripe-аас." },
+      { status: 403 },
+    );
+  }
 
   try {
-    await ensureTable();
-    const db = getDb();
-    await db.execute(
-      `INSERT INTO user_subscriptions (user_id, plan_key, status, expires_at)
-       VALUES (?, ?, 'active', NULL)
-       ON DUPLICATE KEY UPDATE plan_key = VALUES(plan_key), status = 'active', updated_at = NOW()`,
-      [user.id, planKey],
-    );
+    const { expiresAt } = await setUserPlan(user.id, planKey);
+    return NextResponse.json({
+      ok: true,
+      plan: planKey,
+      status: "active",
+      expiresAt: expiresAt ? expiresAt.toISOString() : null,
+    });
   } catch (e) {
     return NextResponse.json({ ok: false, error: mysqlErrorToUserMessage(e) }, { status: 500 });
   }
-
-  return NextResponse.json({ ok: true, plan: planKey });
 }

@@ -9,6 +9,10 @@ export type CompanyBase = {
   userId?: number;
   /** Saved raw website URL */
   websiteRaw?: string;
+  /** Custom banner from `company_profiles.banner_url` */
+  bannerUrl?: string;
+  /** Custom logo from `company_profiles.logo_url` */
+  logoUrl?: string;
   seedJobTitle?: string;
   seedJobDescription?: string;
   seedJobSalary?: string;
@@ -43,7 +47,76 @@ export function companyInitials(name: string) {
 }
 
 export function companyLogoUrl(domain: string) {
-  return `https://www.google.com/s2/favicons?sz=128&domain_url=https://${domain}`;
+  const host = domain.trim();
+  if (!host || host === "example.com") return "";
+  return `https://logo.clearbit.com/${host}`;
+}
+
+export function companyFaviconUrl(domain: string) {
+  const host = domain.trim();
+  if (!host || host === "example.com") return "";
+  return `https://www.google.com/s2/favicons?sz=128&domain_url=${encodeURIComponent(`https://${host}`)}`;
+}
+
+function isGeneratedPlaceholderAsset(url: string) {
+  return /\/uploads\/companies\/\d+\/(logo|banner)\.svg$/i.test(url);
+}
+
+/** DB / татсан logo — Clearbit / favicon fallback */
+export function resolveCompanyLogoSrc(company: Pick<CompanyBase, "logoUrl" | "userId" | "domain">) {
+  const custom = company.logoUrl?.trim();
+  if (custom && !isGeneratedPlaceholderAsset(custom)) return custom;
+
+  const domain = company.domain?.trim();
+  if (domain && domain !== "example.com") {
+    const clearbit = companyLogoUrl(domain);
+    if (clearbit) return clearbit;
+    return companyFaviconUrl(domain);
+  }
+
+  return "";
+}
+
+export function resolveCompanyBannerSrc(company: Pick<CompanyBase, "bannerUrl" | "userId" | "domain">) {
+  const custom = company.bannerUrl?.trim();
+  if (custom && !isGeneratedPlaceholderAsset(custom)) return custom;
+
+  const domain = company.domain?.trim();
+  if (domain && domain !== "example.com") {
+    return `https://image.thum.io/get/width/1600/crop/760/noanimate/https://${domain}`;
+  }
+
+  return "";
+}
+
+type JobCompanyMedia = {
+  companyName: string;
+  companyDomain?: string | null;
+  companyLogoUrl?: string | null;
+  companyProfileUserId?: number | null;
+  createdByUserId?: number | null;
+};
+
+export function resolveJobCompanyLogo(
+  job: JobCompanyMedia,
+  company?: Pick<CompanyBase, "logoUrl" | "userId" | "domain"> | null,
+) {
+  return resolveCompanyLogoSrc({
+    logoUrl: job.companyLogoUrl ?? company?.logoUrl,
+    userId: job.companyProfileUserId ?? company?.userId ?? job.createdByUserId ?? undefined,
+    domain: job.companyDomain?.trim() || company?.domain || "",
+  });
+}
+
+export function resolveJobCompanyBanner(
+  job: JobCompanyMedia & { companyBannerUrl?: string | null },
+  company?: Pick<CompanyBase, "bannerUrl" | "userId" | "domain"> | null,
+) {
+  return resolveCompanyBannerSrc({
+    bannerUrl: job.companyBannerUrl ?? company?.bannerUrl,
+    userId: job.companyProfileUserId ?? company?.userId ?? job.createdByUserId ?? undefined,
+    domain: job.companyDomain?.trim() || company?.domain || "",
+  });
 }
 
 export function findCompanyByName(companyName: string) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Mic, RotateCcw, SkipBack, SkipForward, Square, Volume2, X } from "lucide-react";
 import { landingCategories } from "./data";
 import { type DisplayJob } from "./jobs-types";
 import styles from "./index-landing.module.css";
@@ -40,6 +41,28 @@ const SCHEDULE_OPTIONS: Array<{ value: DisplayJob["employmentType"] | "all"; lab
   { value: "Remote", label: "Дадлага ажил" },
 ];
 
+type VoiceGuidePanelProps = {
+  enabled: boolean;
+  recognitionSupported: boolean;
+  secureContext: boolean;
+  listening: boolean;
+  speaking: boolean;
+  status: string;
+  transcript: string;
+  commandText: string;
+  micHint: string;
+  onCommandTextChange: (value: string) => void;
+  onSubmitTextCommand: () => void;
+  onToggle: () => void;
+  onListen: () => void;
+  onStop: () => void;
+  onFirst: () => void;
+  onPrevious: () => void;
+  onNext: () => void;
+  onRepeat: () => void;
+  onClose: () => void;
+};
+
 type JobsFilterPanelProps = {
   selectedLocation: string | "all";
   onSelectedLocationChange: (value: string | "all") => void;
@@ -56,7 +79,9 @@ type JobsFilterPanelProps = {
   onSelectedScheduleChange: (value: DisplayJob["employmentType"] | "all") => void;
   accessibleOnly: boolean;
   onAccessibleOnlyChange: (value: boolean) => void;
+  voiceGuide: VoiceGuidePanelProps;
   onReset: () => void;
+  scheduleFiltersHidden?: boolean;
 };
 
 export function JobsFilterPanel({
@@ -73,12 +98,29 @@ export function JobsFilterPanel({
   onSelectedSectorChange,
   selectedSchedule,
   onSelectedScheduleChange,
+  accessibleOnly,
+  onAccessibleOnlyChange,
+  voiceGuide,
   onReset,
+  scheduleFiltersHidden = false,
 }: JobsFilterPanelProps) {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const categoryWrapRef = useRef<HTMLDivElement | null>(null);
   const locationWrapRef = useRef<HTMLDivElement | null>(null);
+  const canUseVoiceInput = voiceGuide.secureContext && voiceGuide.recognitionSupported;
+  const listenButtonLabel = voiceGuide.listening
+    ? "Сонсохоо болих"
+    : canUseVoiceInput
+      ? "Команд хэлэх"
+      : voiceGuide.secureContext
+        ? "Mic дэмжихгүй"
+        : "Mic блоклогдсон";
+  const listenButtonTitle = canUseVoiceInput
+    ? undefined
+    : voiceGuide.secureContext
+      ? "Chrome эсвэл Edge дээр voice command ажиллана."
+      : "Mic зөвхөн HTTPS эсвэл localhost дээр ажиллана.";
 
   const categoryOptions = useMemo(
     () => [
@@ -130,6 +172,126 @@ export function JobsFilterPanel({
             </button>
           ) : null}
         </label>
+
+        <button
+          aria-pressed={accessibleOnly}
+          className={`${styles.jobsAccessibleFilterButton} ${
+            accessibleOnly ? styles.jobsAccessibleFilterButtonActive : ""
+          }`}
+          onClick={() => onAccessibleOnlyChange(!accessibleOnly)}
+          type="button"
+        >
+          <span className={styles.jobsAccessibleFilterIcon}>✓</span>
+          <span className={styles.jobsAccessibleFilterText}>
+            <strong>Тэгш боломжийн ажлууд</strong>
+            <small>Хөгжлийн бэрхшээлтэй иргэдэд ээлтэй зарууд · Space — mic · Esc — буцах</small>
+          </span>
+          <span className={styles.jobsAccessibleFilterState}>{accessibleOnly ? "Идэвхтэй" : "Хайх"}</span>
+        </button>
+
+        {accessibleOnly ? (
+          <section className={styles.jobsVoiceGuidePanel} aria-live="polite" id="jobs-voice-guide">
+            <div className={styles.jobsVoiceGuideHead}>
+              <div>
+                <p className={styles.jobsVoiceGuideKicker}>ACCESS VOICE</p>
+                <h4>Дуугаар хөтлөх</h4>
+                <p className={styles.jobsVoiceGuideSpaceHint}>
+                  <kbd className={styles.jobsVoiceGuideKbd}>Space</kbd> — mic ·{" "}
+                  <kbd className={styles.jobsVoiceGuideKbd}>Esc</kbd> — буцах · Командын дараа автоматаар дахин
+                  сонсоно
+                </p>
+              </div>
+              <button
+                className={`${styles.jobsVoiceGuideToggle} ${voiceGuide.enabled ? styles.jobsVoiceGuideToggleOn : ""}`}
+                onClick={voiceGuide.onToggle}
+                type="button"
+              >
+                <Volume2 size={16} />
+                <span>{voiceGuide.enabled ? "Асаалттай" : "Асаах"}</span>
+              </button>
+            </div>
+
+            {voiceGuide.enabled ? (
+              <>
+                <p className={styles.jobsVoiceGuideStatus}>{voiceGuide.status}</p>
+                {voiceGuide.micHint ? (
+                  <p className={styles.jobsVoiceGuideHint}>{voiceGuide.micHint}</p>
+                ) : null}
+                {voiceGuide.transcript ? (
+                  <p className={styles.jobsVoiceGuideTranscript}>“{voiceGuide.transcript}”</p>
+                ) : null}
+
+                <div className={styles.jobsVoiceGuidePrimaryActions}>
+                  <button
+                    className={styles.jobsVoiceGuideListenBtn}
+                    disabled={!voiceGuide.listening && !canUseVoiceInput}
+                    onClick={voiceGuide.listening ? voiceGuide.onStop : voiceGuide.onListen}
+                    title={listenButtonTitle}
+                    type="button"
+                  >
+                    {voiceGuide.listening ? <Square size={16} /> : <Mic size={16} />}
+                    <span>{listenButtonLabel}</span>
+                  </button>
+                  <button
+                    className={styles.jobsVoiceGuideStopBtn}
+                    disabled={!voiceGuide.speaking && !voiceGuide.listening}
+                    onClick={voiceGuide.onStop}
+                    type="button"
+                  >
+                    <Square size={16} />
+                    <span>Зогсоох</span>
+                  </button>
+                </div>
+
+                <form
+                  className={styles.jobsVoiceGuideCommandForm}
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    voiceGuide.onSubmitTextCommand();
+                  }}
+                >
+                  <input
+                    aria-label="Дуугаар хөтлөх команд"
+                    onChange={(event) => voiceGuide.onCommandTextChange(event.target.value)}
+                    placeholder="ж.нь: эхний зар руу ор"
+                    type="text"
+                    value={voiceGuide.commandText}
+                  />
+                  <button disabled={!voiceGuide.commandText.trim()} type="submit">
+                    Ажиллуулах
+                  </button>
+                </form>
+
+                <div className={styles.jobsVoiceGuideQuickGrid}>
+                  <button onClick={voiceGuide.onFirst} type="button">
+                    <Volume2 size={15} />
+                    <span>Эхний зар</span>
+                  </button>
+                  <button onClick={voiceGuide.onPrevious} type="button">
+                    <SkipBack size={15} />
+                    <span>Өмнөх</span>
+                  </button>
+                  <button onClick={voiceGuide.onNext} type="button">
+                    <SkipForward size={15} />
+                    <span>Дараагийн</span>
+                  </button>
+                  <button onClick={voiceGuide.onRepeat} type="button">
+                    <RotateCcw size={15} />
+                    <span>Дахин унш</span>
+                  </button>
+                  <button onClick={voiceGuide.onClose} type="button">
+                    <X size={15} />
+                    <span>Хаах</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p className={styles.jobsVoiceGuideStatus}>
+                Асаагаад “эхний зар руу ор”, “дараагийн зар”, “дэлгэрэнгүй унш” гэж хэлж болно.
+              </p>
+            )}
+          </section>
+        ) : null}
 
         {/* Ангилал */}
         <div className={styles.jobsFilterGroupNew}>
@@ -195,6 +357,11 @@ export function JobsFilterPanel({
         {/* Ажлын төрөл */}
         <div className={styles.jobsFilterGroupNew}>
           <p className={styles.jobsFilterGroupLabel}>АЖЛЫН ТӨРӨЛ</p>
+          {scheduleFiltersHidden ? (
+            <p style={{ margin: 0, fontSize: "0.86rem", lineHeight: 1.45, color: "#6b7280", fontWeight: 600 }}>
+              Таны эрхээр зөвхөн <strong>бүтэн цагийн</strong> ажлын зарууд харагдана (Remote, гэрээт гэх мэтийг нуусан).
+            </p>
+          ) : (
           <div className={styles.jobsFilterCheckboxGroup}>
             {SCHEDULE_OPTIONS.map((opt) => (
               <label className={styles.jobsFilterCheckboxRow} key={opt.value}>
@@ -210,6 +377,7 @@ export function JobsFilterPanel({
               </label>
             ))}
           </div>
+          )}
         </div>
 
         {/* Цалин */}

@@ -1,0 +1,17 @@
+/* Landing .jobCardNew-тай хослуулан — бүх картыг дарахгүй, зөвхөн товч л шилжилт */
+.aiMatchCard {
+  cursor: default;
+}
+
+.aiMatchCard:hover {
+  transform: none;
+  border-color: rgba(109, 40, 217, 0.28);
+  box-shadow: 0 6px 24px rgba(109, 40, 217, 0.12);
+}
+
+.aiMatchApplyLink {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

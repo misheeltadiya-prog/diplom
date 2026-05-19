@@ -1,4 +1,5 @@
 import { getCurrentUser } from "@/lib/auth";
+import { getPortalHomeHref } from "@/lib/profile-portal-home";
 import {
   calculateCvCompletion,
   getCvProfileOrDefault,
@@ -22,7 +23,11 @@ export default async function ProfileCvPage() {
 
   return (
     <>
-      <CvEditor initialCompletion={completion} initialProfile={profile} />
+      <CvEditor
+        backHref={getPortalHomeHref(currentUser.role)}
+        initialCompletion={completion}
+        initialProfile={profile}
+      />
     </>
   );
 }

@@ -11,7 +11,7 @@ type UserRow = {
 
 export async function GET(request: Request) {
   if (!isDemoLoginEnabled()) {
-    return NextResponse.json({ error: "Demo login is disabled." }, { status: 403 });
+    return NextResponse.json({ ok: true, users: [], demoLoginEnabled: false });
   }
 
   const { searchParams } = new URL(request.url);
@@ -31,6 +31,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     ok: true,
+    demoLoginEnabled: true,
     users: rows.map((u) => ({
       id: u.id,
       fullName: u.full_name,

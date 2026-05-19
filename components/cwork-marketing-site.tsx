@@ -4,9 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { companyLogoUrl } from "./index-landing/companies-directory";
+import { resolveCompanyLogoSrc } from "./index-landing/companies-directory";
 
-export type MarqueeCompany = { name: string; domain: string };
+export type MarqueeCompany = {
+  name: string;
+  domain: string;
+  userId?: number;
+  logoUrl?: string;
+};
 import styles from "./cwork-marketing-site.module.css";
 
 type ServiceCardName = "visibility" | "hiring" | "strategy" | "growth";
@@ -259,17 +264,6 @@ function Navbar() {
   );
 }
 
-function Footer() {
-  return (
-    <footer className={styles.footer}>
-      <div className={`${styles.container} ${styles.footerInner}`}>
-        <div className={styles.brand}>C-Work</div>
-        <div className={styles.footerMeta}>(c) 2026 C-WORK. BUILT FOR FREELANCERS AND MODERN TEAMS.</div>
-      </div>
-    </footer>
-  );
-}
-
 function HomePage({ marqueeCompanies }: { marqueeCompanies: MarqueeCompany[] }) {
   const [activeService, setActiveService] = useState<ServiceCardName>("hiring");
 
@@ -334,7 +328,14 @@ function HomePage({ marqueeCompanies }: { marqueeCompanies: MarqueeCompany[] }) 
             <div className={styles.marqueeTrack}>
               {[...marqueeCompanies, ...marqueeCompanies].map((company, index) => (
                 <div className={styles.marqueeItem} key={`${company.domain}-${index}`}>
-                  <img alt={`${company.name} logo`} className={styles.marqueeLogo} src={companyLogoUrl(company.domain)} />
+                  <img
+                    alt={`${company.name} logo`}
+                    className={styles.marqueeLogo}
+                    src={resolveCompanyLogoSrc(company)}
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
                   <span className={styles.marqueeName}>{company.name}</span>
                 </div>
               ))}
@@ -482,7 +483,6 @@ export function CWorkMarketingSite({ marqueeCompanies = [] }: { marqueeCompanies
       <main className={styles.main}>
         <HomePage marqueeCompanies={marqueeCompanies} />
       </main>
-      <Footer />
     </div>
   );
 }

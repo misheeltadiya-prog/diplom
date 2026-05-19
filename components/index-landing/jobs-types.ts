@@ -11,6 +11,9 @@ export type JobRecord = {
   createdAt: string;
   createdByName?: string | null;
   createdByUserId?: number | null;
+  createdByAvatarUrl?: string | null;
+  companyDomain?: string | null;
+  applicantCount?: number;
 };
 
 export type DisplayJob = JobRecord & {

@@ -2,16 +2,22 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { SessionUser } from "@/lib/auth";
+import { websiteToDomain } from "@/lib/website-domain";
 import type { JobRecord } from "@/lib/portal-data";
-import { avatarToneClasses, companyInitials, companyLogoUrl, type CompanyBase } from "./companies-directory";
+import { CompanyProfileForm } from "@/app/profile/company/company-profile-form";
+import { CompanyProfileReadonly } from "@/components/company/company-profile-readonly";
+import {
+  avatarToneClasses,
+  companyInitials,
+  resolveCompanyBannerSrc,
+  resolveCompanyLogoSrc,
+  type CompanyBase,
+} from "./companies-directory";
 import { NavBar } from "./nav-bar";
-import { SiteFooter } from "./site-footer";
 import styles from "./index-landing.module.css";
 import { formatPlatformStat, usePlatformStats } from "./use-platform-stats";
-
-const FAVORITE_KEY = "cwork-landing-favorite-job-ids";
 
 type CompaniesPageProps = {
   currentUser?: SessionUser | null;
@@ -28,24 +34,20 @@ function companyWebsiteHref(company: CompanyBase) {
 
 type CompanyTab = "jobs" | "about" | "news";
 
-function companyBannerUrl(domain: string) {
-  return `https://image.thum.io/get/width/1600/crop/760/noanimate/https://${domain}`;
-}
-
 function formatFollowers(index: number) {
   return `${320 + index * 37}`;
 }
 
-function buildCompanyJobs(company: CompanyBase) {
-  return [`${company.industry} Engineer`, "Product Designer", "Business Analyst"];
-}
-
-function buildCompanyNews(company: CompanyBase) {
-  return [
-    `${company.name} шинэ бүтээгдэхүүн хөгжүүлэлтийн багаа өргөжүүлж байна.`,
-    `${company.industry} чиглэлд шинэ хамтын ажиллагаа эхлүүллээ.`,
-    `${company.city} дахь оффис дээр нээлттэй ажлын ярилцлага зохион байгуулж байна.`,
-  ];
+function companyNewsFromDescription(company: CompanyBase): string[] {
+  const text = company.description?.trim();
+  if (!text) {
+    return [`${company.name} платформ дээр бүртгэлтэй компани.`];
+  }
+  return text
+    .split(/\n+/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .slice(0, 6);
 }
 
 type CompanyDetailModalProps = {
@@ -53,19 +55,62 @@ type CompanyDetailModalProps = {
   currentUser?: SessionUser | null;
   onClose: () => void;
   allCompanies: CompanyBase[];
+  onCompanyUpdated?: (company: CompanyBase) => void;
 };
 
-function CompanyDetailModal({ company, currentUser = null, onClose, allCompanies }: CompanyDetailModalProps) {
+function CompanyDetailModal({
+  company,
+  currentUser = null,
+  onClose,
+  allCompanies,
+  onCompanyUpdated,
+}: CompanyDetailModalProps) {
   const [activeTab, setActiveTab] = useState<CompanyTab>("about");
+  const [detailCompany, setDetailCompany] = useState<CompanyBase | null>(company);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [dbJobs, setDbJobs] = useState<JobRecord[]>([]);
   const [jobsLoading, setJobsLoading] = useState(false);
+  const [bannerUrl, setBannerUrl] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   useEffect(() => {
-    if (!company) {
+    setDetailCompany(company);
+  }, [company]);
+
+  useEffect(() => {
+    if (!company?.userId) {
+      return;
+    }
+    let cancelled = false;
+    setProfileLoading(true);
+    fetch(`/api/companies/${company.userId}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((payload: { ok?: boolean; company?: CompanyBase }) => {
+        if (cancelled || !payload.ok || !payload.company) return;
+        setDetailCompany(payload.company);
+        onCompanyUpdated?.(payload.company);
+      })
+      .catch(() => {
+        /* keep card snapshot */
+      })
+      .finally(() => {
+        if (!cancelled) setProfileLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [company?.userId]);
+
+  useEffect(() => {
+    if (!detailCompany) {
       return;
     }
 
     setActiveTab("about");
+    setBannerUrl(detailCompany.bannerUrl?.trim() || null);
+    setLogoUrl(detailCompany.logoUrl?.trim() || null);
     const previous = document.body.style.overflow;
     document.body.classList.add("job-seeker-modal-open");
     document.body.style.overflow = "hidden";
@@ -74,10 +119,10 @@ function CompanyDetailModal({ company, currentUser = null, onClose, allCompanies
       document.body.classList.remove("job-seeker-modal-open");
       document.body.style.overflow = previous;
     };
-  }, [company]);
+  }, [detailCompany]);
 
   useEffect(() => {
-    if (!company?.isRegistered || !company.userId || activeTab !== "jobs") {
+    if (!detailCompany?.isRegistered || !detailCompany.userId || activeTab !== "jobs") {
       return;
     }
     let cancelled = false;
@@ -86,7 +131,7 @@ function CompanyDetailModal({ company, currentUser = null, onClose, allCompanies
       .then((r) => r.json())
       .then((d: { jobs?: JobRecord[] }) => {
         if (cancelled) return;
-        const uid = company.userId!;
+        const uid = detailCompany.userId!;
         setDbJobs((d.jobs ?? []).filter((j) => j.createdByUserId === uid));
       })
       .catch(() => {
@@ -98,21 +143,116 @@ function CompanyDetailModal({ company, currentUser = null, onClose, allCompanies
     return () => {
       cancelled = true;
     };
-  }, [company, activeTab]);
+  }, [detailCompany, activeTab]);
 
-  if (!company) {
+  if (!company || !detailCompany) {
     return null;
   }
 
   const companyIndex = allCompanies.findIndex(
     (item) =>
-      item.name === company.name &&
-      item.domain === company.domain &&
-      (item.userId ?? 0) === (company.userId ?? 0),
+      item.name === detailCompany.name &&
+      item.domain === detailCompany.domain &&
+      (item.userId ?? 0) === (detailCompany.userId ?? 0),
   );
-  const jobs = buildCompanyJobs(company);
-  const news = buildCompanyNews(company);
+  const news = companyNewsFromDescription(detailCompany);
   const followers = formatFollowers(companyIndex >= 0 ? companyIndex : 0);
+
+  const isOwner = detailCompany.isRegistered && currentUser?.id === detailCompany.userId;
+
+  function applyProfilePatch(patch: {
+    companyName: string;
+    industry: string;
+    city: string;
+    website: string;
+    description: string;
+  }) {
+    if (!detailCompany) {
+      return;
+    }
+
+    const current = detailCompany;
+    const websiteRaw = patch.website.trim();
+    const next: CompanyBase = {
+      ...current,
+      name: patch.companyName.trim() || current.name,
+      industry: patch.industry.trim() || "Компани",
+      city: patch.city.trim() || "Ulaanbaatar",
+      description: patch.description.trim() || undefined,
+      websiteRaw: websiteRaw || undefined,
+      domain: websiteRaw ? websiteToDomain(websiteRaw) : current.domain,
+    };
+    setDetailCompany(next);
+    onCompanyUpdated?.(next);
+  }
+
+  async function handleBannerUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file || !isOwner) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Зөвхөн зураг файл сонгоно уу.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Файл хэт том (5MB хүртэл).");
+      return;
+    }
+
+    setUploadingBanner(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/company-profile/banner", { method: "POST", body: fd });
+      const data = await res.json();
+      
+      if (res.ok && data.url) {
+        setBannerUrl(data.url);
+        alert("Banner амжилттай солигдлоо!");
+      } else {
+        alert(data.error || "Banner upload хийхэд алдаа гарлаа.");
+      }
+    } catch {
+      alert("Banner upload хийхэд алдаа гарлаа.");
+    } finally {
+      setUploadingBanner(false);
+    }
+  }
+
+  async function handleLogoUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file || !isOwner) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Зөвхөн зураг файл сонгоно уу.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Файл хэт том (5MB хүртэл).");
+      return;
+    }
+
+    setUploadingLogo(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/company-profile/logo", { method: "POST", body: fd });
+      const data = await res.json();
+      
+      if (res.ok && data.url) {
+        setLogoUrl(data.url);
+        alert("Logo амжилттай солигдлоо!");
+      } else {
+        alert(data.error || "Logo upload хийхэд алдаа гарлаа.");
+      }
+    } catch {
+      alert("Logo upload хийхэд алдаа гарлаа.");
+    } finally {
+      setUploadingLogo(false);
+    }
+  }
 
   return (
     <div
@@ -138,76 +278,113 @@ function CompanyDetailModal({ company, currentUser = null, onClose, allCompanies
 
         <div className={styles.companyModalBanner}>
           <img
-            alt={`${company.name} banner`}
+            alt={`${detailCompany.name} banner`}
             className={styles.companyModalBannerImage}
             onError={(event) => {
               event.currentTarget.style.display = "none";
             }}
-            src={companyBannerUrl(company.domain)}
+            src={bannerUrl || resolveCompanyBannerSrc(detailCompany)}
           />
           <div className={styles.companyModalBannerOverlay}>
             <div className={styles.companyModalBannerCopy}>
               <span>Find Your</span>
-              <strong>{company.name}</strong>
+              <strong>{detailCompany.name}</strong>
               <span>with C-Work</span>
             </div>
+            {isOwner ? (
+              <label className={styles.companyBannerUploadBtn}>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleBannerUpload}
+                  disabled={uploadingBanner}
+                  style={{ display: "none" }}
+                />
+                <svg aria-hidden fill="none" viewBox="0 0 24 24" width="18" height="18">
+                  <path
+                    d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                {uploadingBanner ? "Ачаалж байна..." : "Зураг солих"}
+              </label>
+            ) : null}
           </div>
         </div>
 
         <div className={styles.companyModalTop}>
           <div className={styles.companyModalIdentity}>
             <div className={styles.companyModalLogoWrap}>
-              <img
-                alt={`${company.name} logo`}
-                className={styles.companyModalLogoImage}
-                onError={(event) => {
-                  event.currentTarget.style.display = "none";
-                  const fallback = event.currentTarget.nextElementSibling as HTMLSpanElement | null;
-                  if (fallback) {
-                    fallback.style.display = "inline-flex";
-                  }
-                }}
-                src={companyLogoUrl(company.domain)}
-              />
-              <span className={styles.companyModalLogoFallback}>{companyInitials(company.name)}</span>
+              {isOwner ? (
+                <label style={{ cursor: "pointer", position: "relative", display: "block" }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    disabled={uploadingLogo}
+                    style={{ display: "none" }}
+                  />
+                  <img
+                    alt={`${detailCompany.name} logo`}
+                    className={styles.companyModalLogoImage}
+                    onError={(event) => {
+                      event.currentTarget.style.display = "none";
+                      const fallback = event.currentTarget.nextElementSibling as HTMLSpanElement | null;
+                      if (fallback) {
+                        fallback.style.display = "inline-flex";
+                      }
+                    }}
+                    src={logoUrl || resolveCompanyLogoSrc(detailCompany)}
+                    style={{ cursor: "pointer" }}
+                  />
+                  <span className={styles.companyModalLogoFallback} style={{ cursor: "pointer" }}>
+                    {companyInitials(detailCompany.name)}
+                  </span>
+                  {uploadingLogo && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        display: "grid",
+                        placeItems: "center",
+                        background: "rgba(0,0,0,0.5)",
+                        color: "#fff",
+                        fontSize: "0.75rem",
+                        borderRadius: "inherit",
+                      }}
+                    >
+                      Ачаалж байна...
+                    </div>
+                  )}
+                </label>
+              ) : (
+                <>
+                  <img
+                    alt={`${detailCompany.name} logo`}
+                    className={styles.companyModalLogoImage}
+                    onError={(event) => {
+                      event.currentTarget.style.display = "none";
+                      const fallback = event.currentTarget.nextElementSibling as HTMLSpanElement | null;
+                      if (fallback) {
+                        fallback.style.display = "inline-flex";
+                      }
+                    }}
+                    src={resolveCompanyLogoSrc(detailCompany)}
+                  />
+                  <span className={styles.companyModalLogoFallback}>{companyInitials(detailCompany.name)}</span>
+                </>
+              )}
             </div>
             <div className={styles.companyModalHeading}>
               <h2 className={styles.companyModalTitle} id="company-modal-title">
-                {company.name}
+                {detailCompany.name}
               </h2>
               <p className={styles.companyModalSubtitle}>
-                {company.industry} · {company.city}
+                {detailCompany.industry} · {detailCompany.city}
               </p>
-            </div>
-          </div>
-
-          <div className={styles.companyModalActions}>
-            <div className={styles.companyModalFollowStat}>{followers} дагагч</div>
-            {company.isRegistered && currentUser?.id === company.userId ? (
-              <Link className={styles.companyModalPortalBtn} href="/profile#company-applications" onClick={onClose}>
-                Өргөдлүүд харах
-              </Link>
-            ) : null}
-            {company.isRegistered ? (
-              <Link
-                className={styles.companyModalPortalBtnSecondary}
-                href="/login?role=company&next=/profile/company"
-                onClick={onClose}
-              >
-                Компаниар нэвтрэх
-              </Link>
-            ) : null}
-            <button className={styles.companyModalFollowButton} type="button">
-              Дагах
-            </button>
-            <div className={styles.companyModalSocials}>
-              <a className={styles.companyModalSocial} href={companyWebsiteHref(company)} rel="noreferrer" target="_blank">
-                web
-              </a>
-              <span className={styles.companyModalSocial}>f</span>
-              <span className={styles.companyModalSocial}>in</span>
-              <span className={styles.companyModalSocial}>yt</span>
-              <span className={styles.companyModalSocial}>ig</span>
             </div>
           </div>
         </div>
@@ -238,67 +415,48 @@ function CompanyDetailModal({ company, currentUser = null, onClose, allCompanies
 
         <div className={styles.companyModalBody}>
           {activeTab === "about" ? (
-            <div className={styles.companyModalSectionGrid}>
-              <article className={styles.companyModalInfoCard}>
-                <h3 className={styles.companyModalInfoTitle}>Товч танилцуулга</h3>
-                <p className={styles.companyModalInfoText}>
-                  {company.description?.trim()
-                    ? company.description.trim()
-                    : `${company.name} нь ${company.industry.toLowerCase()} чиглэлээр ажилладаг ба дотоодын болон олон улсын хэрэглэгчдэд зориулсан бүтээгдэхүүн, платформ, үйлчилгээ хөгжүүлдэг.`}
+            <>
+              {profileLoading ? <p className={styles.companyModalEmpty}>Мэдээлэл ачаалж байна…</p> : null}
+              {isOwner ? (
+                <div className={styles.companyModalEditWrap}>
+                  <p className={styles.companyModalOwnerHint}>
+                    Профайл дээрхтэй ижил талбарууд. Энд засаад хадгалбал жагсаалт болон modal шууд шинэчлэгдэнэ.
+                  </p>
+                  <CompanyProfileForm embedded onSaved={applyProfilePatch} />
+                </div>
+              ) : (
+                <CompanyProfileReadonly company={detailCompany} />
+              )}
+              {!isOwner && currentUser?.role !== "company" ? (
+                <p className={styles.companyModalLoginHint}>
+                  Өөрийн компаниа жагсаалтад нэмэхийн тулд{" "}
+                  <Link href="/register?role=company">company эрхээр бүртгүүлэх</Link> эсвэл{" "}
+                  <Link href="/login?role=company">нэвтрэх</Link>.
                 </p>
-              </article>
-              <article className={styles.companyModalInfoCard}>
-                <h3 className={styles.companyModalInfoTitle}>Яагаад энэ компани вэ?</h3>
-                <p className={styles.companyModalInfoText}>
-                  Бүтээгдэхүүн төвтэй соёл, өсөн тэлж буй баг, орчин үеийн технологи ашигладаг ажлын орчинтой.
-                </p>
-              </article>
-              <article className={styles.companyModalInfoCard}>
-                <h3 className={styles.companyModalInfoTitle}>Холбоо барих</h3>
-                <p className={styles.companyModalInfoText}>
-                  Website: {company.websiteRaw?.trim() || company.domain}
-                  <br />
-                  Байршил: {company.city}
-                  <br />
-                  Чиглэл: {company.industry}
-                </p>
-              </article>
-            </div>
-          ) : null}
-
-          {activeTab === "about" && company.isRegistered ? (
-            <p className={styles.companyModalLoginHint}>
-              Нэг компанийн дансаар л нэвтэрнэ — жагсаалтад байгаа өөр компанийн өмнөөс нэвтэрч болохгүй.{" "}
-              <Link href="/register?role=company">Шинээр бүртгүүлэх</Link> эсвэл өөрийн компанийн и-мэйлээр{" "}
-              <Link href="/login?role=company">нэвтрэх</Link>.
-            </p>
+              ) : null}
+            </>
           ) : null}
 
           {activeTab === "jobs" ? (
             <div className={styles.companyModalList}>
-              {company.isRegistered && company.userId ? (
-                jobsLoading ? (
-                  <p className={styles.companyModalEmpty}>Ажлын заруудыг ачаалж байна…</p>
-                ) : dbJobs.length === 0 ? (
-                  <p className={styles.companyModalEmpty}>
-                    Энэ компани одоогоор платформ дээр зар нэмээгүй байна. Үндсэн{" "}
-                    <Link href="/jobs">Ажлын зар</Link> хуудаас хайна уу.
-                  </p>
-                ) : (
-                  dbJobs.map((job) => (
-                    <article className={styles.companyModalListCard} key={job.id}>
-                      <strong>{job.title}</strong>
-                      <span>
-                        {job.location} · {job.salary}
-                      </span>
-                    </article>
-                  ))
-                )
+              {!detailCompany.isRegistered || !detailCompany.userId ? (
+                <p className={styles.companyModalEmpty}>
+                  Зөвхөн бүртгэлтэй компаниуд платформ дээр зар нэмнэ.
+                </p>
+              ) : jobsLoading ? (
+                <p className={styles.companyModalEmpty}>Ажлын заруудыг ачаалж байна…</p>
+              ) : dbJobs.length === 0 ? (
+                <p className={styles.companyModalEmpty}>
+                  Энэ компани одоогоор платформ дээр зар нэмээгүй байна. Үндсэн{" "}
+                  <Link href="/jobs">Ажлын зар</Link> хуудаас хайна уу.
+                </p>
               ) : (
-                jobs.map((job) => (
-                  <article className={styles.companyModalListCard} key={job}>
-                    <strong>{job}</strong>
-                    <span>{company.name} дээр жишээ нээлттэй боломж</span>
+                dbJobs.map((job) => (
+                  <article className={styles.companyModalListCard} key={job.id}>
+                    <strong>{job.title}</strong>
+                    <span>
+                      {job.location} · {job.salary}
+                    </span>
                   </article>
                 ))
               )}
@@ -310,7 +468,7 @@ function CompanyDetailModal({ company, currentUser = null, onClose, allCompanies
               {news.map((item) => (
                 <article className={styles.companyModalListCard} key={item}>
                   <strong>{item}</strong>
-                  <span>{company.name} · Сүүлийн шинэчлэлт</span>
+                  <span>{detailCompany.name} · Сүүлийн шинэчлэлт</span>
                 </article>
               ))}
             </div>
@@ -323,10 +481,12 @@ function CompanyDetailModal({ company, currentUser = null, onClose, allCompanies
 
 export function CompaniesPage({ currentUser = null, directoryCompanies }: CompaniesPageProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const stats = usePlatformStats();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [savedCount, setSavedCount] = useState(0);
   const [activeCompany, setActiveCompany] = useState<CompanyBase | null>(null);
+  const [companyCards, setCompanyCards] = useState<CompanyBase[]>(directoryCompanies);
+  const [listedNotice, setListedNotice] = useState(false);
 
   const companyHeroStats = [
     { value: formatPlatformStat(stats.companies), label: "Companies" },
@@ -334,29 +494,46 @@ export function CompaniesPage({ currentUser = null, directoryCompanies }: Compan
     { value: formatPlatformStat(stats.cvs), label: "CVs" },
   ];
 
-  const readSaved = useCallback(() => {
+  const refreshDirectory = useCallback(async () => {
     try {
-      const raw = localStorage.getItem(FAVORITE_KEY);
-      if (!raw) {
-        setSavedCount(0);
-        return;
-      }
-      const parsed = JSON.parse(raw) as unknown;
-      if (Array.isArray(parsed) && parsed.every((id) => typeof id === "string")) {
-        setSavedCount(parsed.length);
+      const response = await fetch("/api/companies/directory", { cache: "no-store" });
+      const payload = (await response.json()) as { ok?: boolean; companies?: CompanyBase[] };
+      if (response.ok && Array.isArray(payload.companies)) {
+        setCompanyCards(payload.companies);
       }
     } catch {
-      setSavedCount(0);
+      /* keep last list */
     }
   }, []);
 
-  const companyCards = useMemo(() => directoryCompanies, [directoryCompanies]);
+  useEffect(() => {
+    setCompanyCards(directoryCompanies);
+  }, [directoryCompanies]);
 
   useEffect(() => {
-    readSaved();
-    window.addEventListener("focus", readSaved);
-    return () => window.removeEventListener("focus", readSaved);
-  }, [readSaved]);
+    void refreshDirectory();
+    const onStatsChange = () => {
+      void refreshDirectory();
+    };
+    window.addEventListener("cwork:platform-stats-changed", onStatsChange);
+    return () => window.removeEventListener("cwork:platform-stats-changed", onStatsChange);
+  }, [refreshDirectory]);
+
+  useEffect(() => {
+    if (searchParams.get("listed") === "1") {
+      setListedNotice(true);
+      const timer = window.setTimeout(() => setListedNotice(false), 6000);
+      return () => window.clearTimeout(timer);
+    }
+    return undefined;
+  }, [searchParams]);
+
+  const myCompanyCard = useMemo(() => {
+    if (currentUser?.role !== "company" || typeof currentUser.id !== "number") {
+      return null;
+    }
+    return companyCards.find((c) => c.userId === currentUser.id) ?? null;
+  }, [companyCards, currentUser]);
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 40);
@@ -369,7 +546,6 @@ export function CompaniesPage({ currentUser = null, directoryCompanies }: Compan
     <div className={styles.page}>
       <NavBar
         currentUser={currentUser}
-        favoritesViewActive={false}
         onAbout={() => {
           document.getElementById("contact")?.scrollIntoView({ behavior: "smooth", block: "start" });
         }}
@@ -377,15 +553,11 @@ export function CompaniesPage({ currentUser = null, directoryCompanies }: Compan
           window.scrollTo({ top: 0, behavior: "smooth" });
         }}
         onFindJob={() => {
-          router.push("/jobs#jobs-content");
+          router.push("/jobs");
         }}
         onFreelancer={() => {
           router.push("/freelancers");
         }}
-        onSavedJobsClick={() => {
-          router.push("/jobs#jobs-content");
-        }}
-        savedJobCount={savedCount}
         scrolled={isScrolled}
       />
 
@@ -416,7 +588,20 @@ export function CompaniesPage({ currentUser = null, directoryCompanies }: Compan
           </div>
         </div>
 
+        {listedNotice ? (
+          <p className={styles.searchHeroMeta} role="status">
+            {myCompanyCard
+              ? `«${myCompanyCard.name}» компани жагсаалтад нэмэгдлээ.`
+              : "Профайл хадгалагдлаа. Компани жагсаалтад харагдах ёстой."}
+          </p>
+        ) : null}
+
         <div className={styles.companiesGrid} id="companies-grid">
+          {companyCards.length === 0 ? (
+            <p className={styles.searchHeroMeta}>
+              Одоогоор бүртгэлтэй компани байхгүй. Company эрхээр нэвтэрч профайл бөглөнө үү.
+            </p>
+          ) : null}
           {companyCards.map((company, index) => {
             const toneClass = styles[avatarToneClasses[index % avatarToneClasses.length]];
             const cardKey = company.isRegistered ? `reg-${company.userId ?? index}` : `seed-${company.domain}-${company.name}`;
@@ -439,7 +624,7 @@ export function CompaniesPage({ currentUser = null, directoryCompanies }: Compan
                         fallback.style.display = "inline-flex";
                       }
                     }}
-                    src={companyLogoUrl(company.domain)}
+                    src={resolveCompanyLogoSrc(company)}
                   />
                   <span className={styles.companyAvatarFallback}>{companyInitials(company.name)}</span>
                 </div>
@@ -454,12 +639,17 @@ export function CompaniesPage({ currentUser = null, directoryCompanies }: Compan
         </div>
       </section>
 
-      <SiteFooter />
       <CompanyDetailModal
         allCompanies={companyCards}
         company={activeCompany}
         currentUser={currentUser}
         onClose={() => setActiveCompany(null)}
+        onCompanyUpdated={(updated) => {
+          setCompanyCards((prev) =>
+            prev.map((item) => (item.userId === updated.userId ? { ...item, ...updated } : item)),
+          );
+          setActiveCompany((prev) => (prev?.userId === updated.userId ? { ...prev, ...updated } : prev));
+        }}
       />
     </div>
   );

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
+import styles from "./forgot-password.module.css";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -9,7 +10,7 @@ export default function ForgotPasswordPage() {
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function submit(e: React.FormEvent) {
+  async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErr(null);
     setMsg(null);
@@ -38,33 +39,102 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main style={{ minHeight: "70vh", display: "grid", placeItems: "center", padding: 24 }}>
-      <div style={{ width: "100%", maxWidth: 400 }}>
-        <h1 style={{ fontSize: "1.35rem", marginBottom: 8 }}>Нууц үг сэргээх</h1>
-        <p style={{ color: "#5c5566", fontSize: "0.92rem", marginBottom: 20 }}>
-          Бүртгэлтэй и-мэйл хаягаа оруулна уу.
-        </p>
-        <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
-          <input
-            required
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="name@example.com"
-            style={{ padding: "10px 12px", borderRadius: 10, border: "1px solid #ddd" }}
-          />
-          {err ? <p style={{ color: "#b91c1c", margin: 0 }}>{err}</p> : null}
-          {msg ? <p style={{ color: "#15803d", margin: 0, fontSize: "0.85rem" }}>{msg}</p> : null}
-          <button disabled={loading} type="submit" style={{ padding: "10px 14px", fontWeight: 700 }}>
-            {loading ? "Илгээж байна…" : "Илгээх"}
-          </button>
-        </form>
-        <p style={{ marginTop: 16 }}>
-          <Link href="/login" style={{ color: "#6d28d9" }}>
-            ← Нэвтрэх
+    <main className={styles.page}>
+      <header className={styles.navbar}>
+        <Link className={styles.brand} href="/">
+          C-Work
+        </Link>
+        <nav className={styles.navLinks} aria-label="Forgot password navigation">
+          <Link href="/jobs">Careers</Link>
+          <Link href="/#about">About Us</Link>
+          <Link href="/#benefits">Benefits</Link>
+        </nav>
+        <Link className={styles.signInButton} href="/login">
+          Sign In
+        </Link>
+      </header>
+
+      <section className={styles.hero} aria-label="Нууц үг сэргээх">
+        <div className={styles.card}>
+          <div className={styles.iconBubble} aria-hidden>
+            <svg fill="none" height="26" viewBox="0 0 24 24" width="26">
+              <path
+                d="M9 11.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 0v7m0-3h4m-4 0H6"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.8"
+              />
+              <path
+                d="M13.5 7.2A6 6 0 1 1 12 18.7"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeWidth="1.8"
+              />
+            </svg>
+          </div>
+
+          <h1>Нууц үг сэргээх</h1>
+          <p className={styles.subtitle}>Бүртгэлтэй и-мэйл хаягаа оруулна уу.</p>
+
+          <form className={styles.form} onSubmit={submit}>
+            <label className={styles.field}>
+              <span>И-мэйл хаяг</span>
+              <span className={styles.inputWrap}>
+                <svg aria-hidden fill="none" height="17" viewBox="0 0 24 24" width="17">
+                  <path
+                    d="M4 6.5h16v11H4v-11Zm1.4 1.2 6.6 5.2 6.6-5.2"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.6"
+                  />
+                </svg>
+                <input
+                  required
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                />
+              </span>
+            </label>
+
+            {err ? <p className={styles.errorMsg}>{err}</p> : null}
+            {msg ? <p className={styles.successMsg}>{msg}</p> : null}
+
+            <button className={styles.submitButton} disabled={loading} type="submit">
+              <span>{loading ? "Илгээж байна..." : "Илгээх"}</span>
+              <span aria-hidden>→</span>
+            </button>
+          </form>
+
+          <Link className={styles.backLink} href="/login">
+            ← Нэвтрэх хэсэг рүү буцах
           </Link>
-        </p>
-      </div>
+        </div>
+
+        <div className={styles.infoGrid}>
+          <article className={styles.infoCard}>
+            <span className={styles.infoIcon} aria-hidden>
+              ♜
+            </span>
+            <div>
+              <strong>Аюулгүй байдал</strong>
+              <p>Таны мэдээлэл өндөр нууцлалтай хадгалагдана.</p>
+            </div>
+          </article>
+          <article className={styles.infoCard}>
+            <span className={styles.infoIcon} aria-hidden>
+              ?
+            </span>
+            <div>
+              <strong>Тусламж хэрэгтэй юу?</strong>
+              <p>Манай тусламжийн багтай холбогдоно уу.</p>
+            </div>
+          </article>
+        </div>
+      </section>
     </main>
   );
 }

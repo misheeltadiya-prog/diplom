@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { findCompanyUserIdsByCompanyName } from "@/lib/company-job-ownership";
 import { getDb } from "@/lib/db";
 import { ensureJobApplicationsTable } from "@/lib/job-applications-db";
 import { SQL_JOB_POST_ID_EQ_PARAM } from "@/lib/job-id-compare";
 import { mysqlErrorToUserMessage } from "@/lib/mysql-errors";
 import { notify } from "@/lib/notify";
+import { canApplyToJobToday, recordJobApplicationUsage } from "@/services/subscriptionService";
 
 type ApplyPayload = {
   jobId?: string;
@@ -21,9 +21,7 @@ type RouteContext = {
 };
 
 type JobRow = {
-  company_name: string;
   created_by: number;
-  creator_role: string | null;
   title: string;
 };
 
@@ -35,7 +33,7 @@ export async function POST(request: Request, context: RouteContext) {
 
     if (!body.fullName || !body.email || !body.phone) {
       return NextResponse.json(
-        { error: "ÐÑÑ€, Ð¸-Ð¼ÑÐ¹Ð», ÑƒÑ‚Ð°Ñ Ð·Ð°Ð°Ð²Ð°Ð» ÑˆÐ°Ð°Ñ€Ð´Ð»Ð°Ð³Ð°Ñ‚Ð°Ð¹." },
+        { error: "Нэр, и-мэйл, утас заавал шаардлагатай." },
         { status: 400 },
       );
     }
@@ -44,6 +42,12 @@ export async function POST(request: Request, context: RouteContext) {
     const db = getDb();
     await ensureJobApplicationsTable();
     const currentUser = await getCurrentUser();
+    if (currentUser?.id && currentUser.role === "freelancer") {
+      const applyCheck = await canApplyToJobToday(currentUser.id);
+      if (!applyCheck.ok) {
+        return NextResponse.json({ error: applyCheck.reason, needSubscription: true }, { status: 403 });
+      }
+    }
     const emailLower = body.email.trim().toLowerCase();
     const cvPath = (body.cvFilePath ?? "").trim().slice(0, 500);
 
@@ -78,7 +82,7 @@ export async function POST(request: Request, context: RouteContext) {
 
     if (dup.length > 0) {
       return NextResponse.json(
-        { error: "Ð¢Ð° ÑÐ½Ñ Ð°Ð¶Ð¸Ð»Ð´ Ð°Ð»ÑŒ Ñ…ÑÐ´Ð¸Ð¹Ð½ Ó©Ñ€Ð³Ó©Ð´Ó©Ð» Ð¸Ð»Ð³ÑÑÑÑÐ½ Ð±Ð°Ð¹Ð½Ð°." },
+        { error: "Та энэ ажилд аль хэдийн өргөдөл илгээсэн байна." },
         { status: 409 },
       );
     }
@@ -114,9 +118,8 @@ export async function POST(request: Request, context: RouteContext) {
 
     try {
       const [jobs] = (await db.execute(
-        `SELECT j.created_by, j.title, j.company_name, u.role AS creator_role
+        `SELECT j.created_by, j.title
          FROM job_posts j
-         LEFT JOIN users u ON u.id = j.created_by
          WHERE ${SQL_JOB_POST_ID_EQ_PARAM}
          LIMIT 1`,
         [jobId],
@@ -126,16 +129,8 @@ export async function POST(request: Request, context: RouteContext) {
         const job = jobs[0];
         const recipientIds = new Set<number>();
 
-        if (job.creator_role === "company") {
+        if (Number.isFinite(job.created_by)) {
           recipientIds.add(job.created_by);
-        } else {
-          const matchedCompanyIds = await findCompanyUserIdsByCompanyName(job.company_name, { db });
-          for (const companyUserId of matchedCompanyIds) {
-            recipientIds.add(companyUserId);
-          }
-          if (recipientIds.size === 0 && Number.isFinite(job.created_by)) {
-            recipientIds.add(job.created_by);
-          }
         }
 
         await Promise.allSettled(
@@ -143,8 +138,8 @@ export async function POST(request: Request, context: RouteContext) {
             notify({
               userId,
               type: "new_application",
-              title: "Ð¨Ð¸Ð½Ñ Ó©Ñ€Ð³Ó©Ð´Ó©Ð» Ð¸Ñ€Ð»ÑÑ",
-              body: `${applicantName} Ñ‚Ð°Ð½Ñ‹ "${job.title}" Ð°Ð¶Ð¸Ð»Ð´ Ó©Ñ€Ð³Ó©Ð´Ó©Ð» Ð³Ð°Ñ€Ð³Ð°Ð»Ð°Ð°.`,
+              title: "Шинэ өргөдөл ирлээ",
+              body: `${applicantName} таны "${job.title}" ажилд өргөдөл гаргалаа.`,
               payload: { jobId, applicantName },
             }),
           ),
@@ -154,13 +149,21 @@ export async function POST(request: Request, context: RouteContext) {
       /* ignore */
     }
 
+    if (currentUser?.id && currentUser.role === "freelancer") {
+      try {
+        await recordJobApplicationUsage(currentUser.id);
+      } catch {
+        /* ignore quota side-effect failure */
+      }
+    }
+
     if (currentUser) {
       try {
         await notify({
           userId: currentUser.id,
           type: "new_application",
-          title: "Ó¨Ñ€Ð³Ó©Ð´Ó©Ð» Ð°Ð¼Ð¶Ð¸Ð»Ñ‚Ñ‚Ð°Ð¹ Ð¸Ð»Ð³ÑÑÐ³Ð´Ð»ÑÑ",
-          body: `Ð¢Ð°Ð½Ñ‹ Ó©Ñ€Ð³Ó©Ð´Ó©Ð» Ñ…Ò¯Ð»ÑÑÐ½ Ð°Ð²Ð»Ð°Ð°. Ð¥Ð°Ñ€Ð¸ÑƒÐ³ Ñ…Ò¯Ð»ÑÑÐ½Ñ Ò¯Ò¯.`,
+          title: "Өргөдөл амжилттай илгээгдлээ",
+          body: "Таны өргөдөл хүлээн авлаа. Хариуг хүлээнэ үү.",
           payload: { jobId },
         });
       } catch {

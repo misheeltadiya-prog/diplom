@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { BackButton } from "../back-button";
-import { CompanyProfileForm } from "./company-profile-form";
+import { CompanyDashboardView } from "./company-dashboard-view";
 import styles from "../profile.module.css";
 
 export default async function ProfileCompanyPage() {
@@ -43,30 +43,11 @@ export default async function ProfileCompanyPage() {
           <Link className={styles.chip} href="/login?role=company">
             Нэвтрэх (company)
           </Link>
-          <BackButton />
+          <BackButton role={user.role} />
         </div>
       </section>
     );
   }
 
-  return (
-    <div className={styles.companyOnboarding}>
-      <section className={`${styles.sectionCard} ${styles.companyOnboardingCard}`}>
-        <div className={styles.companyOnboardingHero}>
-          <span className={styles.companyOnboardingEyebrow}>Company profile</span>
-          <div className={styles.sectionHead}>
-            <div>
-              <h1 className={styles.sectionTitle}>Компанийн мэдээлэл</h1>
-              <p className={styles.muted}>
-                Нэр, салбар, байршил, вэб болон танилцуулгаа бөглөснөөр та <strong>/companies</strong> хуудсын жагсаалтад
-                нэмэгдэнэ.
-              </p>
-            </div>
-            <BackButton />
-          </div>
-        </div>
-        <CompanyProfileForm />
-      </section>
-    </div>
-  );
+  return <CompanyDashboardView userId={user.id} />;
 }

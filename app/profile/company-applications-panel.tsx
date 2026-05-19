@@ -87,7 +87,9 @@ export function CompanyApplicationsPanel() {
   useEffect(() => {
     if (!detail) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setDetail(null);
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      setDetail(null);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -128,15 +130,15 @@ export function CompanyApplicationsPanel() {
   return (
     <section className={styles.overviewPanel} id="company-applications">
       <div className={styles.overviewPanelHead}>
-        <div>
-          <h2 className={styles.sectionTitle}>Ирсэн өргөдлүүд</h2>
-          <p style={{ margin: "6px 0 0", fontSize: "0.88rem", color: "#6b6578" }}>
-            Карт дээр дарж өргөдөл гаргагчийн бүх мэдээллийг нээнэ. Хүлээн авах / татгалзах төлөв профайлын
-            статистикт шууд тусгагдана.
-          </p>
-        </div>
-        <button className={styles.chip} onClick={() => void load()} type="button">
-          Сэргээх
+        <h2 className={styles.sectionTitle}>Ирсэн өргөдлүүд</h2>
+        <button
+          aria-label="Сэргээх"
+          className={styles.chipRefresh}
+          onClick={() => void load()}
+          title="Сэргээх"
+          type="button"
+        >
+          ↻
         </button>
       </div>
 
@@ -179,7 +181,7 @@ export function CompanyApplicationsPanel() {
                     })}
                   </span>
                 </div>
-                <p className={styles.applicationCardHint}>Дэлгэрэнгүй харах — дарна уу</p>
+                <p className={styles.applicationCardHint}>Дэлгэрэнгүй харах → дарна уу</p>
               </button>
               {a.status === "pending" ? (
                 <div className={styles.applicationActions}>

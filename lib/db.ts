@@ -1,4 +1,5 @@
 import mysql from "mysql2/promise";
+import { mysqlBaseOptions } from "@/lib/mysql-connect-options";
 
 declare global {
   // eslint-disable-next-line no-var
@@ -21,16 +22,10 @@ export function getDb() {
   }
 
   const pool = mysql.createPool({
-    host: requireEnv("MYSQL_HOST"),
-    port: Number(process.env.MYSQL_PORT ?? 3306),
-    user: requireEnv("MYSQL_USER"),
-    password: requireEnv("MYSQL_PASSWORD"),
-    database: requireEnv("MYSQL_DATABASE"),
+    ...mysqlBaseOptions(requireEnv("MYSQL_DATABASE")),
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    /** Монгол кирилл, Unicode — буруу client charset-аас mojibake гарахгүй */
-    charset: "utf8mb4",
   });
 
   global.mysqlPool = pool;

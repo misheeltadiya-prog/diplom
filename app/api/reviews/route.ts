@@ -27,7 +27,7 @@ async function ensureTable() {
       reviewer_id BIGINT UNSIGNED NOT NULL,
       freelancer_id BIGINT UNSIGNED NOT NULL,
       rating TINYINT NOT NULL,
-      comment TEXT NOT NULL DEFAULT '',
+      comment TEXT NULL,
       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (id),
       UNIQUE KEY reviews_unique (reviewer_id, freelancer_id)
@@ -37,6 +37,7 @@ async function ensureTable() {
 
 // GET /api/reviews?freelancerId=X
 export async function GET(req: Request) {
+  try {
   const url = new URL(req.url);
   const freelancerId = url.searchParams.get("freelancerId");
 
@@ -63,7 +64,7 @@ export async function GET(req: Request) {
     reviewerId: r.reviewer_id,
     reviewerName: r.reviewer_name,
     rating: r.rating,
-    comment: r.comment,
+    comment: r.comment ?? "",
     createdAt: new Date(r.created_at).toISOString(),
   }));
 
@@ -73,6 +74,13 @@ export async function GET(req: Request) {
       : null;
 
   return NextResponse.json({ ok: true, reviews, avgRating, count: reviews.length });
+  } catch (error) {
+    console.error("[reviews GET]", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Сэтгэгдэл ачаалахад алдаа." },
+      { status: 500 },
+    );
+  }
 }
 
 // POST /api/reviews

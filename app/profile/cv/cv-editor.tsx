@@ -3,9 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { CvProfile } from "@/lib/profile-cv";
+import { BackButton } from "../back-button";
 import styles from "../profile.module.css";
 
 type CvEditorProps = {
+  backHref: string;
   initialProfile: CvProfile;
   initialCompletion: number;
 };
@@ -42,7 +44,7 @@ const fieldConfig: Array<{
   { key: "githubUrl", label: "GitHub линк", type: "url" },
 ];
 
-export function CvEditor({ initialProfile, initialCompletion }: CvEditorProps) {
+export function CvEditor({ backHref, initialProfile, initialCompletion }: CvEditorProps) {
   const router = useRouter();
   const [profile, setProfile] = useState(initialProfile);
   const [completion, setCompletion] = useState(initialCompletion);
@@ -101,14 +103,7 @@ export function CvEditor({ initialProfile, initialCompletion }: CvEditorProps) {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <span className={styles.chip}>{completion}% complete</span>
-            <button
-              className={styles.overviewBackButton}
-              onClick={() => router.back()}
-              type="button"
-            >
-              <span className={styles.overviewBackIcon}>←</span>
-              <span>Буцах</span>
-            </button>
+            <BackButton href={backHref} />
           </div>
         </div>
 

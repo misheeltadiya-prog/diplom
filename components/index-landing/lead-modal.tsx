@@ -1,18 +1,56 @@
+"use client";
+
+import { useState } from "react";
 import styles from "./index-landing.module.css";
+
+export type LeadFormPayload = {
+  kind: "hire" | "join";
+  fullName: string;
+  phone: string;
+  email: string;
+  jobType: string;
+  message: string;
+  budget: string;
+  duration: string;
+};
 
 type LeadModalProps = {
   mode: "hire" | "join" | null;
   submitted: boolean;
+  submitting: boolean;
+  error: string | null;
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: (payload: LeadFormPayload) => void;
 };
 
-export function LeadModal({ mode, submitted, onClose, onSubmit }: LeadModalProps) {
+export function LeadModal({ mode, submitted, submitting, error, onClose, onSubmit }: LeadModalProps) {
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [jobType, setJobType] = useState("Вэб хөгжүүлэлт");
+  const [message, setMessage] = useState("");
+  const [budget, setBudget] = useState("");
+  const [duration, setDuration] = useState("1 долоо хоног");
+
   if (!mode) {
     return null;
   }
 
   const isJoin = mode === "join";
+
+  function handleSubmit() {
+    if (!mode) return;
+    onSubmit({
+      kind: mode,
+      fullName,
+      phone,
+      email,
+      jobType: isJoin ? "" : jobType,
+      message,
+      budget: isJoin ? "" : budget,
+      duration: isJoin ? "" : duration,
+    });
+  }
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
@@ -47,24 +85,44 @@ export function LeadModal({ mode, submitted, onClose, onSubmit }: LeadModalProps
             <div className={styles.modalBody}>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Нэр</label>
-                <input className={styles.formInput} placeholder="Таны нэр" />
+                <input
+                  className={styles.formInput}
+                  placeholder="Таны нэр"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                />
               </div>
 
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Утас</label>
-                  <input className={styles.formInput} placeholder="99001234" />
+                  <input
+                    className={styles.formInput}
+                    placeholder="99001234"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>И-мэйл</label>
-                  <input className={styles.formInput} placeholder="ta@example.mn" />
+                  <input
+                    className={styles.formInput}
+                    type="email"
+                    placeholder="ta@example.mn"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
                 </div>
               </div>
 
               {!isJoin ? (
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Ажлын төрөл</label>
-                  <select className={styles.formInput} defaultValue="Вэб хөгжүүлэлт">
+                  <select
+                    className={styles.formInput}
+                    value={jobType}
+                    onChange={(e) => setJobType(e.target.value)}
+                  >
                     <option>Вэб хөгжүүлэлт</option>
                     <option>UI/UX Дизайн</option>
                     <option>Мобайл апп</option>
@@ -81,7 +139,11 @@ export function LeadModal({ mode, submitted, onClose, onSubmit }: LeadModalProps
                 <textarea
                   className={styles.formInput}
                   rows={5}
-                  placeholder={isJoin ? "Та ямар ажил хийж чадах вэ..." : "Хэрэгтэй зүйлээ дэлгэрэнгүй тайлбарлана уу..."}
+                  placeholder={
+                    isJoin ? "Та ямар ажил хийж чадах вэ..." : "Хэрэгтэй зүйлээ дэлгэрэнгүй тайлбарлана уу..."
+                  }
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
                 />
               </div>
 
@@ -89,11 +151,20 @@ export function LeadModal({ mode, submitted, onClose, onSubmit }: LeadModalProps
                 <div className={styles.formRow}>
                   <div className={styles.formGroup}>
                     <label className={styles.formLabel}>Төсөв (₮)</label>
-                    <input className={styles.formInput} placeholder="500,000" />
+                    <input
+                      className={styles.formInput}
+                      placeholder="500,000"
+                      value={budget}
+                      onChange={(e) => setBudget(e.target.value)}
+                    />
                   </div>
                   <div className={styles.formGroup}>
                     <label className={styles.formLabel}>Хугацаа</label>
-                    <select className={styles.formInput} defaultValue="1 долоо хоног">
+                    <select
+                      className={styles.formInput}
+                      value={duration}
+                      onChange={(e) => setDuration(e.target.value)}
+                    >
                       <option>1 долоо хоног</option>
                       <option>2 долоо хоног</option>
                       <option>1 сар</option>
@@ -102,14 +173,16 @@ export function LeadModal({ mode, submitted, onClose, onSubmit }: LeadModalProps
                   </div>
                 </div>
               ) : null}
+
+              {error ? <p className={styles.modalSub} style={{ color: "#f87171" }}>{error}</p> : null}
             </div>
 
             <div className={styles.modalFooter}>
-              <button className={styles.ghostButton} type="button" onClick={onClose}>
+              <button className={styles.ghostButton} type="button" onClick={onClose} disabled={submitting}>
                 Болих
               </button>
-              <button className={styles.primaryButton} type="button" onClick={onSubmit}>
-                Илгээх →
+              <button className={styles.primaryButton} type="button" onClick={handleSubmit} disabled={submitting}>
+                {submitting ? "Илгээж байна…" : "Илгээх →"}
               </button>
             </div>
           </>

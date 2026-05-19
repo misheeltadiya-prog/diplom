@@ -1,5 +1,6 @@
 import type { RowDataPacket } from "mysql2";
 import { getDb } from "@/lib/db";
+import { fixMojibakeMaybe } from "@/lib/text-normalize";
 
 export type CvProfile = {
   userId: number;
@@ -115,15 +116,15 @@ async function ensureProfileCvTable() {
 }
 
 function toText(value: string | null | undefined) {
-  return value?.trim() ?? "";
+  return fixMojibakeMaybe(value).trim();
 }
 
 function mapProfile(row: CvRow): CvProfile {
   return {
     userId: row.user_id,
-    fullName: row.full_name,
-    email: row.email,
-    phone: row.phone,
+    fullName: fixMojibakeMaybe(row.full_name),
+    email: fixMojibakeMaybe(row.email),
+    phone: fixMojibakeMaybe(row.phone),
     headline: toText(row.headline),
     location: toText(row.location),
     professionalSummary: toText(row.professional_summary),
@@ -216,6 +217,61 @@ export function calculateCvCompletion(profile: CvProfile) {
   return Math.round((completedCount / CV_COMPLETION_FIELDS.length) * 100);
 }
 
+/** CV хадгалахад freelancers жагсаалтын мөр (freelancer_profiles) дээрх талбаруудыг синк хийнэ. */
+async function syncFreelancerDirectoryFromCv(userId: number, payload: Omit<CvProfile, "userId" | "updatedAt">) {
+  try {
+    const db = getDb();
+    const [roleRows] = await db.execute(`SELECT role FROM users WHERE id = ? LIMIT 1`, [userId]);
+    const role = (roleRows as RowDataPacket[])[0]?.role;
+    if (role !== "freelancer") return;
+
+    const [fpRows] = await db.execute(`SELECT user_id FROM freelancer_profiles WHERE user_id = ? LIMIT 1`, [userId]);
+    if (!(fpRows as RowDataPacket[])[0]) return;
+
+    const roleTitle = payload.preferredRole?.trim() || payload.headline?.trim() || "";
+    const shortDesc = payload.headline?.trim() || "";
+    const detail = payload.professionalSummary?.trim() || "";
+    const price = payload.salaryExpectation?.trim() || "";
+    const skillsArr = payload.coreSkills
+      .split(/[,;\n]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const skillsJson = JSON.stringify(skillsArr);
+
+    const sets: string[] = [];
+    const vals: (string | number)[] = [];
+    if (roleTitle) {
+      sets.push("role_title = ?");
+      vals.push(roleTitle);
+    }
+    if (shortDesc) {
+      sets.push("short_description = ?");
+      vals.push(shortDesc);
+    }
+    if (detail) {
+      sets.push("detail_description = ?");
+      vals.push(detail);
+    }
+    if (skillsArr.length) {
+      sets.push("skills_json = ?");
+      vals.push(skillsJson);
+    }
+    if (price) {
+      sets.push("price_label = ?");
+      vals.push(price);
+    }
+    if (!sets.length) return;
+
+    vals.push(userId);
+    await db.execute(
+      `UPDATE freelancer_profiles SET ${sets.join(", ")}, updated_at = NOW() WHERE user_id = ?`,
+      vals,
+    );
+  } catch {
+    /* CV хадгалалт амжилттай үлдэнэ */
+  }
+}
+
 export async function saveCvProfile(
   userId: number,
   payload: Omit<CvProfile, "userId" | "updatedAt">,
@@ -292,6 +348,8 @@ export async function saveCvProfile(
       payload.achievements.trim(),
     ],
   );
+
+  await syncFreelancerDirectoryFromCv(userId, payload);
 
   return getCvProfileByUserId(userId);
 }

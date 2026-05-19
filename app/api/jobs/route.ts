@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
+import { computeJobTabCounts } from "@/lib/job-tab-counts";
 import { getJobPosts } from "@/lib/portal-data";
 import { createJob, type JobPayload } from "@/lib/jobs-store";
+import { canPostJob } from "@/services/subscriptionService";
 
 export const dynamic = "force-dynamic";
 
@@ -9,8 +11,10 @@ type IncomingJobPayload = Partial<JobPayload>;
 
 export async function GET() {
   const jobs = await getJobPosts();
+  const tabCounts = computeJobTabCounts(jobs);
+
   return NextResponse.json(
-    { jobs },
+    { jobs, tabCounts },
     { headers: { "Cache-Control": "no-store, max-age=0" } },
   );
 }
@@ -39,6 +43,13 @@ export async function POST(request: Request) {
       !body.description
     ) {
       return NextResponse.json({ error: "Бүх талбарыг бөглөнө үү." }, { status: 400 });
+    }
+
+    if (user.role === "company") {
+      const postCheck = await canPostJob(user.id);
+      if (!postCheck.ok) {
+        return NextResponse.json({ error: postCheck.reason, needSubscription: true }, { status: 403 });
+      }
     }
 
     await createJob(

@@ -93,6 +93,18 @@ async function main() {
         "ALTER TABLE freelancer_profiles ADD COLUMN listed_on_directory TINYINT(1) NOT NULL DEFAULT 0",
         "listed_on_directory",
       ],
+      [
+        "ALTER TABLE freelancer_profiles ADD COLUMN stars_label VARCHAR(32) NOT NULL DEFAULT '★★★★★'",
+        "stars_label",
+      ],
+      [
+        "ALTER TABLE freelancer_profiles ADD COLUMN badge_label VARCHAR(40) NULL",
+        "badge_label",
+      ],
+      [
+        "ALTER TABLE freelancer_profiles ADD COLUMN badge_tone VARCHAR(12) NULL",
+        "badge_tone",
+      ],
     ]) {
       try {
         await conn.query(sql);

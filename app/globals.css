@@ -42,6 +42,22 @@ body {
   font-family: var(--font-sans), sans-serif;
 }
 
+.siteRoot {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+}
+
+.siteMain {
+  flex: 1 0 auto;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 a,
 button,
 input,
@@ -59,6 +75,137 @@ a {
 
 button {
   cursor: pointer;
+}
+
+/* Бүх товч: hover дээш+томорно, click жижигрэнэ, сүүдэргүй */
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+a.primaryButton,
+a.dashboardBtnPrimary,
+.profileMainExitBtn,
+.settingsBackLink,
+.shellPromoCard,
+.profileDashChatSend,
+.chatHistoryComposerSend,
+.chatHistorySend,
+.overviewBackButton,
+.applicationBtnOk,
+.applicationBtnNo,
+.shellActionButton,
+.navLinks .navLinkButton,
+.navPostMobile,
+.mobileBottomNavItem,
+.navProfilePrimaryAction,
+.navProfileSecondaryAction,
+.navProfileLogout,
+.shellSidebarLogout,
+.fab,
+.profileDashChatSendWide,
+.chatSendBtn,
+.profileDashEditBtn,
+.navBellButton,
+.navProfileTrigger,
+.navProfileClose,
+.clearHistoryBtn {
+  box-shadow: none !important;
+}
+
+button:not(:disabled):hover,
+input[type="button"]:not(:disabled):hover,
+input[type="submit"]:not(:disabled):hover,
+input[type="reset"]:not(:disabled):hover,
+a.primaryButton:hover,
+a.dashboardBtnPrimary:hover,
+.profileMainExitBtn:hover,
+.settingsBackLink:hover,
+.shellPromoCard:hover,
+.profileDashChatSend:hover:not(:disabled),
+.chatHistoryComposerSend:hover:not(:disabled),
+.chatHistorySend:hover:not(:disabled),
+.overviewBackButton:hover,
+.applicationBtnOk:hover:not(:disabled),
+.applicationBtnNo:hover:not(:disabled),
+.shellActionButton:hover,
+.navLinks .navLinkButton:hover,
+.navPostMobile:hover,
+.mobileBottomNavItem:hover,
+.navProfilePrimaryAction:hover,
+.navProfileSecondaryAction:hover,
+.navProfileLogout:hover:not(:disabled),
+.shellSidebarLogout:hover,
+.fab:hover,
+.profileDashChatSendWide:hover:not(:disabled),
+.chatSendBtn:hover:not(:disabled),
+.profileDashEditBtn:hover,
+.navBellButton:hover,
+.navProfileTrigger:hover,
+.clearHistoryBtn:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.04);
+}
+
+button:not(:disabled):active,
+input[type="button"]:not(:disabled):active,
+input[type="submit"]:not(:disabled):active,
+input[type="reset"]:not(:disabled):active,
+a.primaryButton:active,
+a.dashboardBtnPrimary:active,
+.profileMainExitBtn:active,
+.settingsBackLink:active,
+.shellPromoCard:active,
+.profileDashChatSend:active:not(:disabled),
+.chatHistoryComposerSend:active:not(:disabled),
+.chatHistorySend:active:not(:disabled),
+.overviewBackButton:active,
+.applicationBtnOk:active:not(:disabled),
+.applicationBtnNo:active:not(:disabled),
+.shellActionButton:active,
+.navLinks .navLinkButton:active,
+.navPostMobile:active,
+.mobileBottomNavItem:active,
+.navProfilePrimaryAction:active,
+.navProfileSecondaryAction:active,
+.navProfileLogout:active:not(:disabled),
+.shellSidebarLogout:active,
+.fab:active,
+.profileDashChatSendWide:active:not(:disabled),
+.chatSendBtn:active:not(:disabled),
+.profileDashEditBtn:active,
+.navBellButton:active,
+.navProfileTrigger:active,
+.clearHistoryBtn:active:not(:disabled) {
+  transform: translateY(0) scale(0.94);
+}
+
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+a.primaryButton,
+a.dashboardBtnPrimary,
+.profileMainExitBtn,
+.settingsBackLink,
+.shellPromoCard,
+.profileDashChatSend,
+.chatHistoryComposerSend,
+.chatHistorySend,
+.overviewBackButton,
+.applicationBtnOk,
+.applicationBtnNo,
+.shellActionButton,
+.navLinks .navLinkButton,
+.fab,
+.chatSendBtn,
+.profileDashEditBtn,
+.clearHistoryBtn {
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    filter 0.18s ease,
+    opacity 0.18s ease;
 }
 
 input,

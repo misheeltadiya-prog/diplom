@@ -4,9 +4,18 @@ USE zeel_platform;
 ALTER TABLE users
   MODIFY COLUMN role ENUM('client', 'freelancer', 'company', 'admin') NOT NULL DEFAULT 'client';
 
+-- NOTE: TEXT columns cannot have DEFAULT in many MySQL configs.
+-- Add portfolio_json safely even if table already has rows.
 ALTER TABLE freelancer_profiles
-  ADD COLUMN portfolio_json TEXT NOT NULL DEFAULT '[]',
+  ADD COLUMN portfolio_json MEDIUMTEXT NULL,
   ADD COLUMN listed_on_directory TINYINT(1) NOT NULL DEFAULT 0;
+
+UPDATE freelancer_profiles
+SET portfolio_json = IFNULL(portfolio_json, '[]')
+WHERE portfolio_json IS NULL;
+
+ALTER TABLE freelancer_profiles
+  MODIFY COLUMN portfolio_json MEDIUMTEXT NOT NULL;
 
 CREATE TABLE IF NOT EXISTS company_profiles (
   user_id BIGINT UNSIGNED NOT NULL,

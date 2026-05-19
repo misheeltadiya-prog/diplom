@@ -57,3 +57,25 @@
   color: #7b7486;
   font-size: 0.9rem;
 }
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(26, 20, 35, 0.08);
+}
+
+.table th {
+  font-weight: 700;
+  color: #5b5368;
+}

@@ -1,19 +1,25 @@
+import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import styles from "../profile.module.css";
-import { BackButton } from "../back-button";
 import { SettingsForm } from "./settings-form";
 import { AvatarUpload } from "./avatar-upload";
 
 function getInitials(name: string) {
-  return name.split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("");
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("");
 }
 
-function formatDateLabel(value: string) {
-  return new Intl.DateTimeFormat("mn-MN", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).format(new Date(value));
+function formatRegisteredDate(value: string) {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "Тодорхойгүй";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}.${m}.${day}`;
 }
 
 export default async function ProfileSettingsPage() {
@@ -21,51 +27,71 @@ export default async function ProfileSettingsPage() {
   const initials = getInitials(currentUser?.fullName ?? "C W");
 
   return (
-    <>
-      <section className={styles.sectionCard}>
-        <div className={styles.sectionHead}>
-          <div>
-            <h2 className={styles.sectionTitle}>Хувийн мэдээлэл засах</h2>
-          </div>
-          <BackButton />
+    <div className={styles.settingsPage}>
+      <header className={styles.settingsTopBar}>
+        <div className={styles.settingsTopBarLeft}>
+          <h1 className={styles.settingsTopTitle}>Хувийн мэдээлэл засах</h1>
         </div>
+        <div className={styles.settingsTopBarRight}>
+          <Link href="/profile/help" className={styles.settingsHelpLink}>
+            Тусламж
+          </Link>
+        </div>
+      </header>
 
-        <div className={styles.settingsGrid}>
-          <div className={styles.settingsPanel}>
-            {/* Avatar upload */}
-            <AvatarUpload initials={initials} initialUrl={currentUser?.avatarUrl} />
-            <SettingsForm
-              initialEmail={currentUser?.email ?? ""}
-              initialFullName={currentUser?.fullName ?? ""}
-              initialPhone={currentUser?.phone ?? ""}
-            />
-          </div>
+      <div className={styles.settingsLayoutGrid}>
+        <section className={styles.settingsEditorCard}>
+          <AvatarUpload initials={initials} initialUrl={currentUser?.avatarUrl} userId={currentUser?.id} />
+          <SettingsForm
+            initialEmail={currentUser?.email ?? ""}
+            initialFullName={currentUser?.fullName ?? ""}
+            initialPhone={currentUser?.phone ?? ""}
+          />
+        </section>
 
-          <div className={styles.settingsPanel}>
-            <div className={styles.settingsPanelCornerBtn}>
-              <BackButton />
+        <div className={styles.settingsRailStack}>
+          <section className={styles.settingsInfoCard}>
+            <div className={styles.settingsCardHead}>
+              <span className={styles.settingsCardHeadIcon} aria-hidden>
+                ℹ
+              </span>
+              <h2 className={styles.settingsCardTitle}>Одоогийн мэдээлэл</h2>
             </div>
             <div className={styles.metaList}>
               <div className={styles.metaRow}>
-                <strong>Одоогийн нэр</strong>
+                <strong>Нэр</strong>
                 <span>{currentUser?.fullName ?? "Зочин хэрэглэгч"}</span>
               </div>
               <div className={styles.metaRow}>
-                <strong>Одоогийн имэйл</strong>
+                <strong>Имэйл</strong>
                 <span>{currentUser?.email ?? "Нэвтрээгүй байна"}</span>
               </div>
               <div className={styles.metaRow}>
-                <strong>Одоогийн утас</strong>
+                <strong>Утас</strong>
                 <span>{currentUser?.phone ?? "Мэдээлэл байхгүй"}</span>
               </div>
-              <div className={styles.metaRow}>
-                <strong>Бүртгүүлсэн огноо</strong>
-                <span>{currentUser?.createdAt ? formatDateLabel(currentUser.createdAt) : "Тодорхойгүй"}</span>
-              </div>
             </div>
-          </div>
+            <p className={styles.settingsMetaRegistered}>
+              Бүртгүүлсэн {currentUser?.createdAt ? formatRegisteredDate(currentUser.createdAt) : "—"}
+            </p>
+          </section>
+
+          <section className={styles.settingsSecurityCard}>
+            <h2 className={styles.settingsSecurityTitle}>Аюулгүй байдал</h2>
+            <Link href="/forgot-password" className={styles.settingsSecurityLink}>
+              <span>Нууц үг шинэчлэх</span>
+              <span className={styles.settingsSecurityLinkChevron}>›</span>
+            </Link>
+          </section>
+
+          <section className={styles.settingsVerifyCard}>
+            <h2 className={styles.settingsVerifyTitle}>Бүртгэл баталгаажсан</h2>
+            <p className={styles.settingsVerifyText}>
+              Таны бүртгэл бүрэн идэвхтэй. Платформын бүх үндсэн боломжуудыг ашиглах боломжтой.
+            </p>
+          </section>
         </div>
-      </section>
-    </>
+      </div>
+    </div>
   );
 }

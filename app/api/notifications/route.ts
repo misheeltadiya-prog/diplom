@@ -81,3 +81,18 @@ export async function PATCH() {
 
   return NextResponse.json({ ok: true });
 }
+
+// DELETE — энэ хэрэглэгчийн бүх мэдэгдлийг устгах
+export async function DELETE() {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return NextResponse.json({ error: "Нэвтрэх шаардлагатай." }, { status: 401 });
+  }
+
+  await ensureTable();
+  const db = getDb();
+
+  await db.execute(`DELETE FROM notifications WHERE user_id = ?`, [currentUser.id]);
+
+  return NextResponse.json({ ok: true });
+}

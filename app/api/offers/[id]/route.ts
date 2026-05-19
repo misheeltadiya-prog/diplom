@@ -89,3 +89,79 @@ export async function PATCH(req: Request, context: RouteContext) {
     return NextResponse.json({ error: mysqlErrorToUserMessage(error) }, { status: 500 });
   }
 }
+
+/** Freelancer / company: өөрийн саналыг бүрэн устгах (бүх төлөв). Pending үед харилцагчид мэдэгдэнэ. */
+export async function DELETE(_req: Request, context: RouteContext) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Нэвтрэх шаардлагатай." }, { status: 401 });
+  }
+
+  const offerId = Number((await context.params).id);
+  if (!Number.isFinite(offerId)) {
+    return NextResponse.json({ error: "ID буруу." }, { status: 400 });
+  }
+
+  const db = getDb();
+  await ensureJobOffersTable();
+
+  try {
+    const [rows] = (await db.execute(
+      `SELECT id, company_user_id, freelancer_user_id, status FROM job_offers WHERE id = ? LIMIT 1`,
+      [offerId],
+    )) as [
+      { id: number; company_user_id: number; freelancer_user_id: number; status: string }[],
+      unknown,
+    ];
+
+    if (rows.length === 0) {
+      return NextResponse.json({ error: "Олдсонгүй." }, { status: 404 });
+    }
+
+    const o = rows[0];
+
+    if (user.role === "freelancer") {
+      if (o.freelancer_user_id !== user.id) {
+        return NextResponse.json({ error: "Эрхгүй." }, { status: 403 });
+      }
+      try {
+        if (o.status === "pending") {
+          await notify({
+            userId: o.company_user_id,
+            type: "job_offer",
+            title: "Санал татгалзлаа",
+            body: "Freelancer таны саналыг татгалзсан (устгасан).",
+            payload: { offerId, status: "rejected" },
+          });
+        }
+      } catch {
+        /* */
+      }
+      await db.execute(`DELETE FROM job_offers WHERE id = ? AND freelancer_user_id = ?`, [offerId, user.id]);
+    } else if (user.role === "company") {
+      if (o.company_user_id !== user.id) {
+        return NextResponse.json({ error: "Эрхгүй." }, { status: 403 });
+      }
+      try {
+        if (o.status === "pending") {
+          await notify({
+            userId: o.freelancer_user_id,
+            type: "job_offer",
+            title: "Санал цуцлагдлаа",
+            body: "Компани илгээсэн саналаа цуцалсан (устгасан).",
+            payload: { offerId, status: "cancelled" },
+          });
+        }
+      } catch {
+        /* */
+      }
+      await db.execute(`DELETE FROM job_offers WHERE id = ? AND company_user_id = ?`, [offerId, user.id]);
+    } else {
+      return NextResponse.json({ error: "Эрхгүй." }, { status: 403 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return NextResponse.json({ error: mysqlErrorToUserMessage(error) }, { status: 500 });
+  }
+}

@@ -56,51 +56,56 @@ export function FreelancerPublishSheet({ open, onClose, currentUser, onSaved }: 
       }}
       role="presentation"
     >
-      <article
-        className={`${styles.freelancerGridCard} ${styles.landingSheetPanel}`}
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-      >
+      <article className={styles.freelancerPublishSheet} onClick={(e) => e.stopPropagation()} role="dialog">
         <button aria-label="Хаах" className={styles.landingSheetClose} onClick={onClose} type="button">
-          ×
+          <svg aria-hidden className={styles.landingSheetCloseIcon} height="18" viewBox="0 0 24 24" width="18">
+            <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="2.25" />
+          </svg>
         </button>
-        <h2 className={styles.landingSheetTitle}>Зар оруулах</h2>
-        <p className={styles.landingSheetSubtitle}>Freelancers жагсаалтад гаргах мэдээлэл (profile-тай ижил)</p>
+        <header className={styles.freelancerPublishSheetHeader}>
+          <p className={styles.freelancerPublishSheetKicker}>C-WORK · FREELANCER</p>
+          <h2>Зар оруулах · засах</h2>
+          <p className={styles.freelancerPublishSheetSubtitle}>
+            Жагсаалтын карт, дэлгэрэнгүй хуудас таны профайлын зураг, нэртэй нийцнэ. CV хадгалахад доорх талбарууд
+            автоматаар шинэчлэгдэнэ.
+          </p>
+        </header>
 
-        {!currentUser ? (
-          <div className={styles.landingSheetGate}>
-            <p className={styles.landingSheetGateText}>Эхлээд freelancer дансаар бүртгүүлнэ үү.</p>
-            <Link className={styles.freelancerPostProfileBtn} href="/register?role=freelancer" onClick={onClose}>
-              Бүртгүүлэх
-            </Link>
-          </div>
-        ) : !isFreelancer ? (
-          <div className={styles.landingSheetGate}>
-            <p className={styles.landingSheetGateText}>
-              Таны эрх: <strong>{currentUser.role}</strong>. Зар оруулахын тулд freelancer данс шаардлагатай.
-            </p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
+        <div className={styles.freelancerPublishSheetBody}>
+          {!currentUser ? (
+            <div className={styles.landingSheetGate}>
+              <p className={styles.landingSheetGateText}>Эхлээд freelancer дансаар бүртгүүлнэ үү.</p>
               <Link className={styles.freelancerPostProfileBtn} href="/register?role=freelancer" onClick={onClose}>
-                Шинэ freelancer
-              </Link>
-              <Link
-                className={styles.freelancerPostProfileBtn}
-                href={`/login?role=freelancer&next=${encodeURIComponent("/freelancers?publish=1")}`}
-                onClick={onClose}
-                style={{ background: "#fff", color: "#5b21b6", border: "2px solid rgba(109,40,217,0.35)" }}
-              >
-                Freelancer-ээр нэвтрэх
+                Бүртгүүлэх
               </Link>
             </div>
-          </div>
-        ) : (
-          <PublishFreelancerForm
-            onSaved={() => {
-              onSaved();
-              onClose();
-            }}
-          />
-        )}
+          ) : !isFreelancer ? (
+            <div className={styles.landingSheetGate}>
+              <p className={styles.landingSheetGateText}>
+                Таны эрх: <strong>{currentUser.role}</strong>. Зар оруулахын тулд freelancer данс шаардлагатай.
+              </p>
+              <div className={styles.freelancerPublishSheetGateActions}>
+                <Link className={styles.freelancerPostProfileBtn} href="/register?role=freelancer" onClick={onClose}>
+                  Шинэ freelancer
+                </Link>
+                <Link
+                  className={`${styles.freelancerPostProfileBtn} ${styles.freelancerPublishSheetGhostBtn}`}
+                  href={`/login?role=freelancer&next=${encodeURIComponent("/freelancers?publish=1")}`}
+                  onClick={onClose}
+                >
+                  Freelancer-ээр нэвтрэх
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <PublishFreelancerForm
+              onSaved={() => {
+                onSaved();
+                onClose();
+              }}
+            />
+          )}
+        </div>
       </article>
     </div>
   );

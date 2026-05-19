@@ -1,4 +1,5 @@
 import type { RowDataPacket } from "mysql2";
+import { fixMojibakeMaybe } from "@/lib/text-normalize";
 
 /** Жагсаалтын картын ID — `users.id`-аас ялгах (чат/API). */
 export const REGISTERED_FREELANCER_SEEKER_ID_OFFSET = 9_000_000;
@@ -99,18 +100,18 @@ export function mapJobSeekerRow(row: JobSeekerRow): JobSeekerPublic {
   const badgeTone = normalizeBadgeTone(row.badge_tone);
   return {
     id: Number(row.id),
-    initials: String(row.initials ?? ""),
-    fullName: String(row.full_name ?? ""),
-    roleTitle: String(row.role_title ?? ""),
-    shortDescription: String(row.short_description ?? ""),
-    detailDescription: String(row.detail_description ?? ""),
+    initials: fixMojibakeMaybe(row.initials),
+    fullName: fixMojibakeMaybe(row.full_name),
+    roleTitle: fixMojibakeMaybe(row.role_title),
+    shortDescription: fixMojibakeMaybe(row.short_description),
+    detailDescription: fixMojibakeMaybe(row.detail_description),
     skills: parseSkills(row.skills_json),
-    priceLabel: String(row.price_label ?? ""),
-    starsLabel: String(row.stars_label ?? "★★★★★"),
-    rating: String(row.rating ?? ""),
-    reviewsCount: String(row.reviews_count ?? ""),
+    priceLabel: fixMojibakeMaybe(row.price_label),
+    starsLabel: fixMojibakeMaybe(row.stars_label ?? "★★★★★"),
+    rating: fixMojibakeMaybe(row.rating),
+    reviewsCount: fixMojibakeMaybe(row.reviews_count),
     accent,
-    badgeLabel: row.badge_label == null ? null : String(row.badge_label),
+    badgeLabel: row.badge_label == null ? null : fixMojibakeMaybe(row.badge_label),
     badgeTone,
     linkedUserId: row.linked_user_id == null ? null : Number(row.linked_user_id),
   };
@@ -146,9 +147,12 @@ export function mapRegisteredFreelancerRow(row: {
   detail_description: string;
   skills_json: unknown;
   price_label: string;
+  stars_label?: string;
   rating: string;
   reviews_count: string;
   accent: string;
+  badge_label?: string | null;
+  badge_tone?: string | null;
   portfolio_json?: string | null;
 }): JobSeekerPublic {
   const uid = Number(row.user_id);
@@ -156,23 +160,24 @@ export function mapRegisteredFreelancerRow(row: {
   const accent = isAccent(accentRaw) ? accentRaw : "lime";
   const portfolioItems = parsePortfolioJson(row.portfolio_json ?? undefined);
   const avatar = typeof row.avatar_url === "string" ? row.avatar_url.trim() : "";
+  const badgeTone = normalizeBadgeTone(row.badge_tone ?? null);
   return {
     id: REGISTERED_FREELANCER_SEEKER_ID_OFFSET + uid,
     linkedUserId: uid,
-    initials: initialsFromName(String(row.full_name ?? "")),
-    fullName: String(row.full_name ?? ""),
+    initials: initialsFromName(fixMojibakeMaybe(row.full_name)),
+    fullName: fixMojibakeMaybe(row.full_name),
     avatarUrl: avatar ? avatar : null,
-    roleTitle: String(row.role_title ?? ""),
-    shortDescription: String(row.short_description ?? ""),
-    detailDescription: String(row.detail_description ?? ""),
+    roleTitle: fixMojibakeMaybe(row.role_title),
+    shortDescription: fixMojibakeMaybe(row.short_description),
+    detailDescription: fixMojibakeMaybe(row.detail_description),
     skills: parseSkills(row.skills_json),
-    priceLabel: String(row.price_label ?? ""),
-    starsLabel: "★★★★★",
-    rating: String(row.rating ?? "5.0"),
-    reviewsCount: String(row.reviews_count ?? "0"),
+    priceLabel: fixMojibakeMaybe(row.price_label),
+    starsLabel: fixMojibakeMaybe(row.stars_label ?? "★★★★★"),
+    rating: fixMojibakeMaybe(row.rating ?? "5.0"),
+    reviewsCount: fixMojibakeMaybe(row.reviews_count ?? "0"),
     accent,
-    badgeLabel: "Бүртгэлтэй",
-    badgeTone: "new",
+    badgeLabel: row.badge_label == null ? "Бүртгэлтэй" : fixMojibakeMaybe(row.badge_label),
+    badgeTone: badgeTone ?? "new",
     portfolioItems,
   };
 }

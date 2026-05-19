@@ -1,7 +1,7 @@
 import { getCurrentUser } from "@/lib/auth";
-import { chatConversationId } from "@/lib/chat-conversation";
+import { allDmConversationIds } from "@/lib/chat-conversation";
 import { ensureChatTable } from "@/lib/chat-db";
-import { chatConversationParams, chatConversationWhere } from "@/lib/chat-queries";
+import { chatConversationParamsMulti, chatConversationWhere, chatConversationWhereMulti } from "@/lib/chat-queries";
 import { getLinkedFreelancerUserIdForChat } from "@/lib/chat-linked-user";
 import { getDb } from "@/lib/db";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
@@ -48,19 +48,33 @@ export async function GET(req: Request, context: RouteContext) {
   const db = getDb();
   const linkedFreelancerUserId = await getLinkedFreelancerUserIdForChat(db, seekerProfileId);
 
-  let convId: string | null;
+  let convIds: string[];
   if (linkedFreelancerUserId === currentUser.id) {
     if (bodyClientId == null || !Number.isFinite(bodyClientId)) {
       return new Response("clientUserId required", { status: 400 });
     }
-    convId = chatConversationId(seekerProfileId, bodyClientId);
+    convIds = allDmConversationIds({
+      seekerProfileId,
+      currentUserId: currentUser.id,
+      linkedFreelancerUserId,
+      otherUserId: bodyClientId,
+    });
   } else {
-    convId = chatConversationId(seekerProfileId, currentUser.id);
+    convIds = allDmConversationIds({
+      seekerProfileId,
+      currentUserId: currentUser.id,
+      linkedFreelancerUserId,
+      otherUserId: null,
+    });
+  }
+
+  if (convIds.length === 0) {
+    return new Response("Invalid conversation", { status: 400 });
   }
 
   try {
-    const cw = chatConversationWhere();
-    const cp = chatConversationParams(convId, currentUser.id, seekerProfileId);
+    const cw = convIds.length === 1 ? chatConversationWhere() : chatConversationWhereMulti(convIds);
+    const cp = chatConversationParamsMulti(convIds, currentUser.id, seekerProfileId);
     const [rows] = (await db.execute(
       `SELECT MAX(id) as max_id FROM chat_messages WHERE ${cw}`,
       cp,
@@ -84,8 +98,8 @@ export async function GET(req: Request, context: RouteContext) {
 
         try {
           const dbInner = getDb();
-          const cw = chatConversationWhere();
-          const cp = chatConversationParams(convId, currentUser.id, seekerProfileId);
+          const cw = convIds.length === 1 ? chatConversationWhere() : chatConversationWhereMulti(convIds);
+          const cp = chatConversationParamsMulti(convIds, currentUser.id, seekerProfileId);
           const [msgRows] = (await dbInner.execute(
             `SELECT id, sender_id, sender_name, message, created_at
              FROM chat_messages

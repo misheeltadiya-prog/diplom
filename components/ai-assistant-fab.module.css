@@ -1,0 +1,43 @@
+.fab {
+  position: fixed;
+  z-index: 280;
+  right: max(20px, env(safe-area-inset-right, 0px));
+  bottom: max(22px, env(safe-area-inset-bottom, 0px));
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #8b5cf6 0%, #7b3fe4 45%, #6d28d9 100%);
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.fab:hover {
+  filter: brightness(1.05);
+}
+
+.fab:active {
+  filter: brightness(0.98);
+}
+
+.fab:focus-visible {
+  outline: 3px solid rgba(123, 63, 228, 0.45);
+  outline-offset: 3px;
+}
+
+.fabIcon {
+  display: block;
+  width: 26px;
+  height: 26px;
+}
+
+@media (max-width: 720px) {
+  .fab {
+    bottom: max(84px, calc(env(safe-area-inset-bottom, 0px) + 72px));
+  }
+}

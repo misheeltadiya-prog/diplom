@@ -32,13 +32,13 @@ async function assertJobOwner(
   )) as [{ company_name: string; created_by: number }[], unknown];
 
   if (rows.length === 0) {
-    return { ok: false as const, status: 404 as const, error: "ÐÐ¶Ð¸Ð» Ð¾Ð»Ð´ÑÐ¾Ð½Ð³Ò¯Ð¹." };
+    return { ok: false as const, status: 404 as const, error: "Ажил олдсонгүй." };
   }
 
   if (rows[0].created_by !== currentUser.id) {
     const identityNames = await getCompanyIdentityNames(currentUser);
     if (!isCompanyNameMatch(rows[0].company_name, identityNames)) {
-      return { ok: false as const, status: 403 as const, error: "Ð—Ó©Ð²Ñ…Ó©Ð½ Ð°Ð¶Ð»Ñ‹Ð½ ÑÐ·ÑÐ½ Ó©Ñ€Ð³Ó©Ð´Ó©Ð» Ñ…Ð°Ñ€Ð°Ñ… Ð±Ð¾Ð»Ð¾Ð¼Ð¶Ñ‚Ð¾Ð¹." };
+      return { ok: false as const, status: 403 as const, error: "Зөвхөн ажлын эзэн өргөдөл харах боломжтой." };
     }
   }
 
@@ -48,7 +48,7 @@ async function assertJobOwner(
 export async function GET(_req: Request, context: RouteContext) {
   const currentUser = await getCurrentUser();
   if (!currentUser) {
-    return NextResponse.json({ error: "ÐÑÐ²Ñ‚Ñ€ÑÑ… ÑˆÐ°Ð°Ñ€Ð´Ð»Ð°Ð³Ð°Ñ‚Ð°Ð¹." }, { status: 401 });
+    return NextResponse.json({ error: "Нэвтрэх шаардлагатай." }, { status: 401 });
   }
 
   const { id: jobId } = await context.params;
@@ -85,14 +85,14 @@ export async function GET(_req: Request, context: RouteContext) {
 export async function PATCH(req: Request, context: RouteContext) {
   const currentUser = await getCurrentUser();
   if (!currentUser) {
-    return NextResponse.json({ error: "ÐÑÐ²Ñ‚Ñ€ÑÑ… ÑˆÐ°Ð°Ñ€Ð´Ð»Ð°Ð³Ð°Ñ‚Ð°Ð¹." }, { status: 401 });
+    return NextResponse.json({ error: "Нэвтрэх шаардлагатай." }, { status: 401 });
   }
 
   const { id: jobId } = await context.params;
   const body = (await req.json()) as { applicationId?: number; status?: string };
 
   if (!body.applicationId || !["pending", "accepted", "rejected"].includes(body.status ?? "")) {
-    return NextResponse.json({ error: "applicationId Ð±Ð¾Ð»Ð¾Ð½ status ÑˆÐ°Ð°Ñ€Ð´Ð»Ð°Ð³Ð°Ñ‚Ð°Ð¹." }, { status: 400 });
+    return NextResponse.json({ error: "applicationId болон status шаардлагатай." }, { status: 400 });
   }
 
   const newStatus = body.status as "pending" | "accepted" | "rejected";
@@ -109,7 +109,7 @@ export async function PATCH(req: Request, context: RouteContext) {
   )) as [{ id: number; email: string; applicant_user_id: number | null; full_name: string }[], unknown];
 
   if (apps.length === 0) {
-    return NextResponse.json({ error: "Ó¨Ñ€Ð³Ó©Ð´Ó©Ð» Ð¾Ð»Ð´ÑÐ¾Ð½Ð³Ò¯Ð¹." }, { status: 404 });
+    return NextResponse.json({ error: "Өргөдөл олдсонгүй." }, { status: 404 });
   }
 
   await db.execute(
@@ -133,17 +133,17 @@ export async function PATCH(req: Request, context: RouteContext) {
   if (notifyUserId != null) {
     const title =
       newStatus === "accepted"
-        ? "Ó¨Ñ€Ð³Ó©Ð´Ó©Ð» Ñ…Ò¯Ð»ÑÑÐ½ Ð°Ð²Ð»Ð°Ð°"
+        ? "Өргөдөл хүлээн авлаа"
         : newStatus === "rejected"
-          ? "Ó¨Ñ€Ð³Ó©Ð´Ó©Ð» Ñ‚Ð°Ñ‚Ð³Ð°Ð»Ð·Ð»Ð°Ð°"
-          : "Ó¨Ñ€Ð³Ó©Ð´Ð»Ð¸Ð¹Ð½ Ñ‚Ó©Ð»Ó©Ð² ÑˆÐ¸Ð½ÑÑ‡Ð»ÑÐ³Ð´Ð»ÑÑ";
+          ? "Өргөдөл татгалзлаа"
+          : "Өргөдлийн төлөв шинэчлэгдлээ";
 
     const statusBody =
       newStatus === "accepted"
-        ? "ÐÐ¶Ð»Ñ‹Ð½ Ð·Ð°Ñ€Ñ‹Ð½ ÑÐ·ÑÐ½ Ñ‚Ð°Ð½Ñ‹ Ó©Ñ€Ð³Ó©Ð´Ð»Ð¸Ð¹Ð³ Ñ…Ò¯Ð»ÑÑÐ½ Ð°Ð²Ð»Ð°Ð°."
+        ? "Ажлын зарын эзэн таны өргөдлийг хүлээн авлаа."
         : newStatus === "rejected"
-          ? "ÐÐ¶Ð»Ñ‹Ð½ Ð·Ð°Ñ€Ñ‹Ð½ ÑÐ·ÑÐ½ Ñ‚Ð°Ð½Ñ‹ Ó©Ñ€Ð³Ó©Ð´Ð»Ð¸Ð¹Ð³ Ñ‚Ð°Ñ‚Ð³Ð°Ð»Ð·Ð»Ð°Ð°."
-          : "Ð¢Ð°Ð½Ñ‹ Ó©Ñ€Ð³Ó©Ð´Ð»Ð¸Ð¹Ð½ Ñ‚Ó©Ð»Ó©Ð² ÑˆÐ¸Ð½ÑÑ‡Ð»ÑÐ³Ð´Ð»ÑÑ.";
+          ? "Ажлын зарын эзэн таны өргөдлийг татгалзлаа."
+          : "Таны өргөдлийн төлөв шинэчлэгдлээ.";
 
     try {
       await notify({
