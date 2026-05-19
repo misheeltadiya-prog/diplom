@@ -107,6 +107,17 @@ async function createGoogleUser(
     return userId;
   } catch (err: unknown) {
     const code = (err as { code?: string }).code;
+    if (code === "ER_DUP_ENTRY") {
+      const existing = await selectUserByEmail(profile.email);
+      if (existing) {
+        try {
+          await linkGoogleId(existing.id, profile.sub, profile.picture);
+        } catch {
+          /* google_id column may be missing */
+        }
+        return existing.id;
+      }
+    }
     if (code === "ER_BAD_FIELD_ERROR") {
       try {
         const [result] = (await db.execute(

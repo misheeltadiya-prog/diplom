@@ -109,7 +109,13 @@ export function AuthSlider({ initialSignup = false, role, next }: AuthSliderProp
       email_required: "Google данснаас и-мэйл авч чадсангүй.",
     };
 
-    setOauthHint(messages[err] ?? "Google-тай холбогдоход алдаа гарлаа.");
+    const text = messages[err] ?? "Google-тай холбогдоход алдаа гарлаа.";
+    setOauthHint(text);
+    try {
+      sessionStorage.setItem("cwork_oauth_error", text);
+    } catch {
+      /* ignore */
+    }
     if (onRegister) setRegError(null);
 
     params.delete("oauth_error");
@@ -117,6 +123,19 @@ export function AuthSlider({ initialSignup = false, role, next }: AuthSliderProp
     const clean = `${window.location.pathname}${qs ? `?${qs}` : ""}`;
     window.history.replaceState({}, "", clean);
   }, [role, initialSignup, signupMode]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || oauthHint) return;
+    try {
+      const stored = sessionStorage.getItem("cwork_oauth_error");
+      if (stored) {
+        setOauthHint(stored);
+        sessionStorage.removeItem("cwork_oauth_error");
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [oauthHint]);
 
   const demoRoleQuery = useMemo(() => {
     if (role === "company" || role === "freelancer") return role;

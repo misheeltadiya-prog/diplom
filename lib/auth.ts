@@ -167,8 +167,9 @@ export async function issueSession(userId: number) {
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
 
   await db.execute(
-    `INSERT INTO user_sessions (user_id, session_token, expires_at) VALUES (?, ?, ?)`,
-    [userId, token, expiresAt],
+    `INSERT INTO user_sessions (user_id, session_token, expires_at)
+     VALUES (?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL ? DAY))`,
+    [userId, token, SESSION_DAYS],
   );
 
   return { token, expiresAt };

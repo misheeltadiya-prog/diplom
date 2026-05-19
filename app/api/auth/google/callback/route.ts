@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
+
 import { resolveGoogleLogin } from "@/lib/auth-google";
 import { applySessionCookie, issueSession } from "@/lib/auth";
 import { exchangeCodeForGoogleProfile, getGoogleOAuthConfig } from "@/lib/google-oauth";
+import { oauthRedirect } from "@/lib/oauth-redirect";
 import {
   clearGoogleOAuthPending,
   readGoogleOAuthPending,
@@ -18,12 +21,27 @@ function oauthErrorRedirect(
   pending?: Pick<GoogleOAuthPending, "returnTo" | "intentRole"> | null,
 ) {
   const base = pending?.returnTo === "register" ? "/register" : "/login";
-  const url = new URL(base, req.url);
-  url.searchParams.set("oauth_error", code);
+  const params = new URLSearchParams({ oauth_error: code });
   if (pending?.intentRole === "company" || pending?.intentRole === "freelancer") {
-    url.searchParams.set("role", pending.intentRole);
+    params.set("role", pending.intentRole);
   }
-  return NextResponse.redirect(url);
+  return oauthRedirect(req, base, params);
+}
+
+function resolvePending(state: string, cookiePending: GoogleOAuthPending | null): GoogleOAuthPending | null {
+  if (cookiePending?.state === state) {
+    return cookiePending;
+  }
+  const signed = parseSignedOAuthState(state);
+  if (signed) {
+    return {
+      state,
+      intentRole: signed.intentRole,
+      next: signed.next,
+      returnTo: signed.returnTo,
+    };
+  }
+  return null;
 }
 
 export async function GET(request: Request) {
@@ -40,21 +58,10 @@ export async function GET(request: Request) {
     return oauthErrorRedirect(request, "invalid_callback");
   }
 
-  const signed = parseSignedOAuthState(state);
   const cookiePending = await readGoogleOAuthPending();
   await clearGoogleOAuthPending();
 
-  const pending: GoogleOAuthPending | null = signed
-    ? {
-        state,
-        intentRole: signed.intentRole,
-        next: signed.next,
-        returnTo: signed.returnTo,
-      }
-    : cookiePending && cookiePending.state === state
-      ? cookiePending
-      : null;
-
+  const pending = resolvePending(state, cookiePending);
   if (!pending) {
     return oauthErrorRedirect(request, "invalid_state", cookiePending);
   }
@@ -84,12 +91,15 @@ export async function GET(request: Request) {
       next: pending.next,
       isNewOAuthUser: result.isNewUser,
     });
-    const response = NextResponse.redirect(new URL(dest, request.url));
+    const response = oauthRedirect(request, dest);
     applySessionCookie(response, token, expiresAt);
     return response;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[google-oauth-callback]", msg, err);
+    if (/redirect_uri_mismatch|invalid_grant/i.test(msg)) {
+      return oauthErrorRedirect(request, "google_denied", pending);
+    }
     if (/GOOGLE_ID_COLUMN_MISSING|google_id/i.test(msg)) {
       return oauthErrorRedirect(request, "migration_required", pending);
     }

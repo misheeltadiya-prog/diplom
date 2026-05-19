@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
 import { buildGoogleAuthUrl, getGoogleOAuthConfig } from "@/lib/google-oauth";
 import { createSignedOAuthState } from "@/lib/oauth-state-signed";
 import { applyGoogleOAuthPendingCookie, type GoogleOAuthPending } from "@/lib/oauth-state-cookie";
