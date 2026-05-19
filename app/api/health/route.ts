@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getEnvStatus } from "@/lib/env";
+import { getGoogleOAuthConfig } from "@/lib/google-oauth";
 import { getStripe } from "@/lib/stripe-server";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +21,7 @@ export async function GET() {
   }
 
   const stripeClient = getStripe();
+  const googleOAuth = getGoogleOAuthConfig(request);
   const ok = database === "connected";
 
   return NextResponse.json(
@@ -40,6 +42,11 @@ export async function GET() {
         geminiHint: env.gemini
           ? undefined
           : "Vercel → Settings → Environment Variables → GEMINI_API_KEY (Production) → дараа нь Deployments → Redeploy (Build cache асаахгүй).",
+        googleOAuth: env.googleOAuth,
+        googleRedirectUri: googleOAuth?.redirectUri ?? null,
+        googleOAuthHint: env.googleOAuth
+          ? undefined
+          : "Vercel → GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET → Google Console redirect: …/api/auth/google/callback → Redeploy.",
         qpay: env.qpay,
         realtime: env.realtime,
         issueCount: env.issues.length,

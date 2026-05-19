@@ -88,7 +88,8 @@ export function AuthSlider({ initialSignup = false, role, next }: AuthSliderProp
       window.location.pathname === "/register" || initialSignup || signupMode;
 
     const messages: Record<string, string> = {
-      not_configured: "Google OAuth тохируулаагүй байна (.env.local).",
+      not_configured:
+        "Google OAuth тохируулаагүй. Vercel дээр GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET нэмээд redeploy хийнэ үү.",
       cancelled: onRegister ? "Google бүртгэлийг цуцаллаа." : "Google нэвтрэлтийг цуцаллаа.",
       google_denied: "Google зөвшөөрөл өгөөгүй.",
       invalid_state: "Хүсэлт хугацаа дууссан. Дахин оролдоно уу.",

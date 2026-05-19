@@ -1,4 +1,5 @@
 import { getGeminiEnvDebug } from "@/lib/gemini-env";
+import { isGoogleOAuthConfigured } from "@/lib/google-oauth";
 import { isS3Configured } from "@/lib/object-storage";
 import { isSmtpConfigured } from "@/lib/mail";
 import { logger } from "@/lib/logger";
@@ -54,6 +55,13 @@ export function validateServerEnv(): EnvIssue[] {
         severity: "warn",
       });
     }
+    if (!isGoogleOAuthConfigured()) {
+      issues.push({
+        key: "GOOGLE_CLIENT_ID",
+        message: "Google OAuth тохируулаагүй — Google-ээр нэвтрэх ажиллахгүй.",
+        severity: "warn",
+      });
+    }
   }
 
   const stripeErr = getStripeKeyValidationError();
@@ -86,6 +94,7 @@ export function getEnvStatus() {
     geminiModel: geminiDbg.model,
     geminiKeySource: geminiDbg.source,
     geminiKeyLength: geminiDbg.configured ? geminiDbg.keyLength : 0,
+    googleOAuth: isGoogleOAuthConfigured(),
     qpay: Boolean(read("QPAY_USERNAME") && read("QPAY_PASSWORD")),
     realtime: read("REALTIME_PROVIDER") || "sse",
     issues: validateServerEnv(),

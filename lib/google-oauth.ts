@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import { appOriginFromRequest } from "@/lib/stripe-server";
+import { getSiteUrl } from "@/lib/site-url";
 
 const GOOGLE_AUTH = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN = "https://oauth2.googleapis.com/token";
@@ -21,17 +22,29 @@ export type GoogleProfile = {
   emailVerified?: boolean;
 };
 
+/** OAuth redirect_uri — production дээр NEXT_PUBLIC_SITE_URL, dev дээр идэвхтэй порт */
+export function getOAuthAppOrigin(req: Request): string {
+  if (process.env.NODE_ENV === "production") {
+    return getSiteUrl();
+  }
+  return appOriginFromRequest(req);
+}
+
 export function getGoogleOAuthConfig(req: Request): GoogleOAuthConfig | null {
   const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
   if (!clientId || !clientSecret) return null;
 
-  const origin = appOriginFromRequest(req);
+  const origin = getOAuthAppOrigin(req);
   return {
     clientId,
     clientSecret,
-    redirectUri: `${origin}/api/auth/google/callback`,
+    redirectUri: `${origin.replace(/\/$/, "")}/api/auth/google/callback`,
   };
+}
+
+export function isGoogleOAuthConfigured(): boolean {
+  return Boolean(process.env.GOOGLE_CLIENT_ID?.trim() && process.env.GOOGLE_CLIENT_SECRET?.trim());
 }
 
 export function buildGoogleAuthUrl(config: GoogleOAuthConfig, state: string): string {

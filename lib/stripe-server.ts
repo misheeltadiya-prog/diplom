@@ -125,9 +125,19 @@ export function getStripeWebhookSecret(): string | null {
  * NEXT_PUBLIC_APP_URL нь бодит Next порттой зөрвөл (жишээ нь :3000 дээр Grafana, Next :3001)
  * идэвхтэй хүсэлтийн origin-ийг сонгоно.
  */
+function cleanPublicOrigin(raw: string | undefined): string | null {
+  const cleaned = raw?.trim().replace(/^<|>$/g, "").replace(/\/$/, "");
+  if (cleaned && (cleaned.startsWith("http://") || cleaned.startsWith("https://"))) {
+    return cleaned;
+  }
+  return null;
+}
+
 export function appOriginFromRequest(req: Request): string {
   const requestOrigin = new URL(req.url).origin;
-  const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.trim()?.replace(/\/$/, "");
+  const fromEnv =
+    cleanPublicOrigin(process.env.NEXT_PUBLIC_APP_URL) ??
+    cleanPublicOrigin(process.env.NEXT_PUBLIC_SITE_URL);
 
   if (!fromEnv) {
     return requestOrigin;
