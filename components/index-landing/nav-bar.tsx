@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { SessionUser } from "@/lib/auth";
 import { COMPANY_PENDING_APPLICATIONS_EVENT } from "@/lib/company-applications-events";
+import { NavSavedJobsButton } from "./nav-saved-jobs-button";
 import styles from "./index-landing.module.css";
 
 type NavBarProps = {
@@ -18,21 +19,6 @@ type NavBarProps = {
   /** Үндсэн хуудасны «Зар оруулах» sheet нээлттэй үед navbar нуугдана */
   jobPostComposerOpen?: boolean;
 };
-
-function BellIcon() {
-  return (
-    <svg aria-hidden="true" height="22" viewBox="0 0 24 24" width="22">
-      <path
-        d="M18 8a6 6 0 10-12 0c0 7-3 7-3 7h18s-3 0-3-7M13.73 21a2 2 0 01-3.46 0"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-      />
-    </svg>
-  );
-}
 
 function ProfileIcon() {
   return (
@@ -138,7 +124,6 @@ export function NavBar({
   const [navRevealByScroll, setNavRevealByScroll] = useState(true);
   const lastScrollYRef = useRef(0);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [pendingCompanyApplications, setPendingCompanyApplications] = useState(0);
   const [pendingFreelancerOffers, setPendingFreelancerOffers] = useState(0);
 
@@ -165,30 +150,6 @@ export function NavBar({
       if (stored) setUserAvatar(stored);
     } catch { /* ignore */ }
   }, [currentUser?.avatarUrl, currentUser?.id]);
-
-  useEffect(() => {
-    if (!currentUser) {
-      setUnreadNotifications(0);
-      return;
-    }
-    let cancelled = false;
-    const tick = () => {
-      fetch("/api/notifications", { cache: "no-store" })
-        .then((r) => r.json())
-        .then((d: { unreadCount?: number }) => {
-          if (!cancelled && typeof d.unreadCount === "number") {
-            setUnreadNotifications(d.unreadCount);
-          }
-        })
-        .catch(() => {});
-    };
-    tick();
-    const id = window.setInterval(tick, 45_000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-    };
-  }, [currentUser]);
 
   useEffect(() => {
     if (currentUser?.role !== "company") {
@@ -382,12 +343,7 @@ export function NavBar({
           </div>
         </div>
         <div className={styles.navRight}>
-          <Link aria-label="Мэдэгдэл" className={styles.navBellButton} href="/profile">
-            <BellIcon />
-            {unreadNotifications > 0 ? (
-              <span className={styles.navBellBadge}>{unreadNotifications > 99 ? "99+" : unreadNotifications}</span>
-            ) : null}
-          </Link>
+          <NavSavedJobsButton />
           <button
             aria-controls="index-profile-drawer"
             aria-expanded={profileOpen}
@@ -402,15 +358,9 @@ export function NavBar({
               ) : (
                 <ProfileIcon />
               )}
-              {unreadNotifications > 0 || (currentUser?.role === "company" && pendingCompanyApplications > 0) ? (
+              {currentUser?.role === "company" && pendingCompanyApplications > 0 ? (
                 <span
-                  aria-label={
-                    unreadNotifications > 0 && currentUser?.role === "company" && pendingCompanyApplications > 0
-                      ? "Уншаагүй мэдэгдэл ба шийдвэр хүлээж буй өргөдөл"
-                      : unreadNotifications > 0
-                        ? "\u0423\u043d\u0448\u0430\u0430\u0433\u04af\u0439 \u043c\u044d\u0434\u044d\u0433\u0434\u044d\u043b"
-                        : "Шийдвэр хүлээж буй өргөдөл"
-                  }
+                  aria-label="Шийдвэр хүлээж буй өргөдөл"
                   style={{
                     position: "absolute",
                     top: 2,
@@ -513,12 +463,7 @@ export function NavBar({
                     <span style={{ fontWeight: 800, fontSize: "0.85rem" }}>*</span>
                   </span>
                   <span className={styles.navProfileLinkCopy}>
-                    <strong>
-                      Upgrade
-                      {unreadNotifications > 0 ? (
-                        <span className={styles.navProfileLinkBadge}>{unreadNotifications}</span>
-                      ) : null}
-                    </strong>
+                    <strong>Upgrade</strong>
                     <span style={{ display: "block", fontSize: "0.75rem", color: "#7b7486", fontWeight: 600 }}>
                       Subscription
                     </span>

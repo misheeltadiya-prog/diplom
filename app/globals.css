@@ -106,6 +106,7 @@ a.dashboardBtnPrimary,
 .chatSendBtn,
 .profileDashEditBtn,
 .navBellButton,
+.navFavoritesButton,
 .navProfileTrigger,
 .navProfileClose,
 .clearHistoryBtn {
@@ -140,6 +141,7 @@ a.dashboardBtnPrimary:hover,
 .chatSendBtn:hover:not(:disabled),
 .profileDashEditBtn:hover,
 .navBellButton:hover,
+.navFavoritesButton:hover,
 .navProfileTrigger:hover,
 .clearHistoryBtn:hover:not(:disabled) {
   transform: translateY(-3px) scale(1.04);
@@ -173,6 +175,7 @@ a.dashboardBtnPrimary:active,
 .chatSendBtn:active:not(:disabled),
 .profileDashEditBtn:active,
 .navBellButton:active,
+.navFavoritesButton:active,
 .navProfileTrigger:active,
 .clearHistoryBtn:active:not(:disabled) {
   transform: translateY(0) scale(0.94);

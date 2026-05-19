@@ -3,6 +3,11 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { SessionUser } from "@/lib/auth";
+import {
+  FAVORITES_CHANGED_EVENT,
+  readFavoriteJobIdsFromStorage,
+  toggleFavoriteJobIdInStorage,
+} from "@/lib/landing-favorites";
 import { landingCategories, type LandingCategoryKey } from "./data";
 import { FreelancerPublishSheet } from "./freelancer-publish-sheet";
 import { JobsListSection } from "./jobs-list-section";
@@ -10,8 +15,6 @@ import { LeadModal, type LeadFormPayload } from "./lead-modal";
 import { NavBar } from "./nav-bar";
 import { Toast } from "./toast";
 import styles from "./index-landing.module.css";
-
-const FAVORITE_JOBS_STORAGE_KEY = "cwork-landing-favorite-job-ids";
 
 type IndexLandingPageProps = {
   currentUser?: SessionUser | null;
@@ -115,38 +118,14 @@ export function IndexLandingPage({ currentUser = null }: IndexLandingPageProps) 
   }, [currentUser?.role]);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(FAVORITE_JOBS_STORAGE_KEY);
-      if (!raw) {
-        return;
-      }
-      const parsed = JSON.parse(raw) as unknown;
-      if (
-        Array.isArray(parsed) &&
-        parsed.every((id) => typeof id === "string")
-      ) {
-        setFavoriteJobIds(parsed);
-      }
-    } catch {
-      // ignore
-    }
+    setFavoriteJobIds(readFavoriteJobIdsFromStorage());
+    const onChange = () => setFavoriteJobIds(readFavoriteJobIdsFromStorage());
+    window.addEventListener(FAVORITES_CHANGED_EVENT, onChange);
+    return () => window.removeEventListener(FAVORITES_CHANGED_EVENT, onChange);
   }, []);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        FAVORITE_JOBS_STORAGE_KEY,
-        JSON.stringify(favoriteJobIds),
-      );
-    } catch {
-      // ignore
-    }
-  }, [favoriteJobIds]);
-
   function toggleFavoriteJob(id: string) {
-    setFavoriteJobIds((prev) =>
-      prev.includes(id) ? prev.filter((jobId) => jobId !== id) : [...prev, id],
-    );
+    setFavoriteJobIds(toggleFavoriteJobIdInStorage(id));
   }
 
   useEffect(() => {
