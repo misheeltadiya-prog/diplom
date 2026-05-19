@@ -1,3 +1,4 @@
+import { getGeminiEnvDebug } from "@/lib/gemini-env";
 import { isS3Configured } from "@/lib/object-storage";
 import { isSmtpConfigured } from "@/lib/mail";
 import { logger } from "@/lib/logger";
@@ -60,24 +61,31 @@ export function validateServerEnv(): EnvIssue[] {
     issues.push({ key: "STRIPE_SECRET_KEY", message: stripeErr, severity: "error" });
   }
 
-  const gemini = read("GEMINI_API_KEY");
-  if (gemini && gemini.length < 20) {
-    issues.push({ key: "GEMINI_API_KEY", message: "Gemini түлхүүр хэт богино.", severity: "warn" });
+  const geminiDbg = getGeminiEnvDebug();
+  if (!geminiDbg.configured && (read("GEMINI_API_KEY") || read("GOOGLE_API_KEY"))) {
+    issues.push({
+      key: "GEMINI_API_KEY",
+      message:
+        "Gemini түлхүүр олдсон ч хэт богино эсвэл буруу формат (AIza... эхлэх 39+ тэмдэгт, хашилт/хоосон мөргүй).",
+      severity: "warn",
+    });
   }
 
   return issues;
 }
 
 export function getEnvStatus() {
-  const geminiKey = read("GEMINI_API_KEY");
+  const geminiDbg = getGeminiEnvDebug();
   return {
     nodeEnv: process.env.NODE_ENV ?? "development",
     smtp: isSmtpConfigured(),
     s3: isS3Configured(),
     stripe: Boolean(read("STRIPE_SECRET_KEY") && !getStripeKeyValidationError()),
     stripeWebhook: Boolean(read("STRIPE_WEBHOOK_SECRET")),
-    gemini: geminiKey.length >= 20,
-    geminiModel: read("GEMINI_MODEL") || "gemini-2.0-flash (default)",
+    gemini: geminiDbg.configured,
+    geminiModel: geminiDbg.model,
+    geminiKeySource: geminiDbg.source,
+    geminiKeyLength: geminiDbg.configured ? geminiDbg.keyLength : 0,
     qpay: Boolean(read("QPAY_USERNAME") && read("QPAY_PASSWORD")),
     realtime: read("REALTIME_PROVIDER") || "sse",
     issues: validateServerEnv(),

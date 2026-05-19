@@ -3,6 +3,9 @@ import { getDb } from "@/lib/db";
 import { getEnvStatus } from "@/lib/env";
 import { getStripe } from "@/lib/stripe-server";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 export async function GET() {
   const env = getEnvStatus();
   let database: "connected" | "disconnected" = "disconnected";
@@ -32,6 +35,11 @@ export async function GET() {
         stripeWebhook: env.stripeWebhook,
         gemini: env.gemini,
         geminiModel: env.geminiModel,
+        geminiKeySource: env.geminiKeySource,
+        geminiKeyLength: env.geminiKeyLength,
+        geminiHint: env.gemini
+          ? undefined
+          : "Vercel → Settings → Environment Variables → GEMINI_API_KEY (Production) → дараа нь Deployments → Redeploy (Build cache асаахгүй).",
         qpay: env.qpay,
         realtime: env.realtime,
         issueCount: env.issues.length,

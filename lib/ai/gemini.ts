@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI, SchemaType, type GenerationConfig } from "@google/generative-ai";
+import { getGeminiApiKey, getGeminiModelId } from "@/lib/gemini-env";
 import type { AiPromptAnalysis } from "./types";
 
 const SYSTEM_INSTRUCTION = `You are an expert hiring assistant for a freelance / job marketplace (C-Work style).
@@ -156,12 +157,12 @@ const DEFAULT_MODEL_CANDIDATES = [
 ] as const;
 
 export async function analyzeUserPrompt(prompt: string): Promise<AiPromptAnalysis> {
-  const key = process.env.GEMINI_API_KEY?.trim();
+  const key = getGeminiApiKey();
   if (!key) {
     throw new Error("GEMINI_API_KEY is not configured.");
   }
 
-  const configuredRaw = process.env.GEMINI_MODEL?.trim();
+  const configuredRaw = getGeminiModelId();
   const configured = configuredRaw ? normalizeModelId(configuredRaw) : null;
   const candidates = [...(configured ? [configured] : []), ...DEFAULT_MODEL_CANDIDATES];
   const modelIds = [...new Set(candidates.filter(Boolean))];
