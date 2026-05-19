@@ -6,6 +6,7 @@ import type { SessionUser } from "@/lib/auth";
 import type { JobSeekerPublic } from "@/lib/job-seekers";
 import type { CvProfile } from "@/lib/profile-cv";
 import profileStyles from "@/app/profile/profile.module.css";
+import { FreelancerAvatar } from "@/components/freelancer-avatar";
 import { FreelancerReviewsPanel } from "@/components/freelancer-reviews-panel";
 import styles from "./index-landing.module.css";
 
@@ -27,12 +28,6 @@ type ChatMsg = {
 };
 
 const locationPool = ["Улаанбаатар", "Улаанбаатар / Hybrid", "Remote", "Remote / UB", "Дархан", "Эрдэнэт"];
-
-function seekerPhotoSrc(seeker: JobSeekerPublic) {
-  const u = seeker.avatarUrl?.trim();
-  if (u) return u;
-  return `https://i.pravatar.cc/240?img=${(seeker.id % 70) + 1}`;
-}
 
 function buildContact(seeker: JobSeekerPublic) {
   const tail = String(1000 + (seeker.id % 9000)).padStart(4, "0");
@@ -261,8 +256,13 @@ export function JobSeekerDetailModal({ seeker, onClose, currentUser = null }: Jo
 
         {/* ── Header ── */}
         <div className={styles.profileDashHeader}>
-          <img alt={seeker.fullName} className={styles.profileDashAvatar}
-            src={seekerPhotoSrc(seeker)} />
+          <FreelancerAvatar
+            fullName={seeker.fullName}
+            avatarUrl={seeker.avatarUrl}
+            size={80}
+            imgClassName={styles.profileDashAvatar}
+            className={styles.profileDashAvatar}
+          />
           <div className={styles.profileDashHeaderInfo}>
             <div className={styles.profileDashHeaderTop}>
               <div>
@@ -624,8 +624,7 @@ export function JobSeekerDetailModal({ seeker, onClose, currentUser = null }: Jo
                     className={`${profileStyles.chatHistoryThreadRow} ${profileStyles.chatHistoryThreadRowActive}`}
                   >
                     <div className={profileStyles.chatHistoryAvatar}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img alt="" src={seekerPhotoSrc(seeker)} />
+                      <FreelancerAvatar fullName={seeker.fullName} avatarUrl={seeker.avatarUrl} size={40} />
                     </div>
                     <div className={profileStyles.chatHistoryThreadMeta}>
                       <div className={profileStyles.chatHistoryThreadTop}>

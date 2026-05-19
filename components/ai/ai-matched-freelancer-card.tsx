@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import type { FreelancerMatchScore } from "@/lib/ai/types";
+import { FreelancerAvatar } from "@/components/freelancer-avatar";
 import landing from "@/components/index-landing/index-landing.module.css";
 import local from "@/components/jobs/ai-matched-job-card.module.css";
 
@@ -27,12 +28,6 @@ function clip(text: string, max: number) {
   const t = text.trim();
   if (t.length <= max) return t;
   return `${t.slice(0, max)}…`;
-}
-
-function avatarSrc(id: number, avatarUrl?: string | null) {
-  const a = avatarUrl?.trim();
-  if (a) return a;
-  return `https://i.pravatar.cc/240?img=${(id % 70) + 1}`;
 }
 
 export function AiMatchedFreelancerCard({
@@ -61,13 +56,12 @@ export function AiMatchedFreelancerCard({
           padding: 0,
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={avatarSrc(freelancer.id, freelancer.avatarUrl)}
-          alt={freelancer.fullName}
-          width={56}
-          height={56}
-          style={{ borderRadius: "12px", objectFit: "cover", flexShrink: 0 }}
+        <FreelancerAvatar
+          fullName={freelancer.fullName}
+          avatarUrl={freelancer.avatarUrl}
+          size={56}
+          className={landing.freelanceAvatarPlaceholder}
+          imgClassName={local.aiMatchAvatarImg}
         />
         <div className={landing.freelanceCardInfo} style={{ flex: 1, minWidth: 0 }}>
           <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: 800 }}>{freelancer.fullName}</h3>

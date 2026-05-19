@@ -10228,11 +10228,25 @@
   box-shadow: 0 10px 22px rgba(19, 16, 45, 0.04);
 }
 
-.freelanceResultCard > img {
+.freelanceResultCard > img,
+.freelanceResultCard .freelanceAvatarPlaceholder {
   width: 72px;
   height: 72px;
   border-radius: 999px;
   object-fit: cover;
+}
+
+.freelanceAvatarPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: linear-gradient(145deg, #7c3aed 0%, #4f46e5 100%);
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  user-select: none;
 }
 
 .freelanceCardInfo {

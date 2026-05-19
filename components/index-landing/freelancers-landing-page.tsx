@@ -7,6 +7,7 @@ import type { SessionUser } from "@/lib/auth";
 import type { JobSeekerPublic } from "@/lib/job-seekers";
 import { FreelancerPublishSheet } from "./freelancer-publish-sheet";
 import { JobSeekerDetailModal } from "./job-seeker-detail-modal";
+import { FreelancerAvatar } from "@/components/freelancer-avatar";
 import { NavBar } from "./nav-bar";
 import styles from "./index-landing.module.css";
 const cardMotion = {
@@ -18,10 +19,6 @@ type ApiBody = { jobSeekers?: JobSeekerPublic[]; error?: string };
 type FreelancersLandingPageProps = {
   currentUser?: SessionUser | null;
 };
-
-function avatarUrl(card: JobSeekerPublic) {
-  return card.avatarUrl?.trim() || `https://i.pravatar.cc/240?img=${(card.id % 70) + 1}`;
-}
 
 export function FreelancersLandingPage({ currentUser = null }: FreelancersLandingPageProps) {
   const router = useRouter();
@@ -233,8 +230,7 @@ export function FreelancersLandingPage({ currentUser = null }: FreelancersLandin
                     whileHover="hover"
                     transition={{ type: "spring", stiffness: 280, damping: 24 }}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={avatarUrl(card)} alt={card.fullName} />
+                    <FreelancerAvatar fullName={card.fullName} avatarUrl={card.avatarUrl} size={72} />
                     <div className={styles.freelanceCardInfo}>
                       <h3>
                         {card.fullName} <span>✹</span>

@@ -9,6 +9,11 @@
   box-shadow: 0 6px 24px rgba(109, 40, 217, 0.12);
 }
 
+.aiMatchAvatarImg {
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
 .aiMatchApplyLink {
   text-decoration: none;
   display: inline-flex;

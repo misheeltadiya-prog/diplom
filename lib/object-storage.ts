@@ -17,6 +17,15 @@ export function isS3Configured(): boolean {
   );
 }
 
+/** Vercel зэрэг serverless дээр локал диск руу бичих боломжгүй — S3/R2 заавал. */
+export function objectStorageRequiredMessage(): string {
+  return "Продакшн дээр зураг хадгалахын тулд S3 (эсвэл Cloudflare R2) тохиргоо хэрэгтэй. Vercel → Environment Variables: S3_BUCKET, S3_REGION, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_PUBLIC_BASE_URL.";
+}
+
+export function mustUseObjectStorage(): boolean {
+  return process.env.NODE_ENV === "production" && !isS3Configured();
+}
+
 function publicUrlForKey(key: string): string {
   const cdn = process.env.S3_PUBLIC_BASE_URL?.trim();
   if (cdn) {
@@ -68,6 +77,10 @@ export async function storeImageBuffer(opts: {
   contentType: string;
 }): Promise<StoredObject> {
   const key = `uploads/${opts.folder}/${opts.filename}`;
+
+  if (mustUseObjectStorage()) {
+    throw new Error(objectStorageRequiredMessage());
+  }
 
   if (isS3Configured()) {
     try {

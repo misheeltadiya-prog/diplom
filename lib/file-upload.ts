@@ -1,4 +1,8 @@
-import { storeImageBuffer, deleteStoredUrl } from "@/lib/object-storage";
+import {
+  objectStorageRequiredMessage,
+  storeImageBuffer,
+  deleteStoredUrl,
+} from "@/lib/object-storage";
 import { logger } from "@/lib/logger";
 
 export type UploadResult = {
@@ -34,10 +38,11 @@ export async function uploadFile(
 
     return { success: true, url: stored.url, storage: stored.storage };
   } catch (error) {
-    logger.error("file_upload_failed", {
-      folder,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error("file_upload_failed", { folder, error: message });
+    if (message.includes("S3_BUCKET") || message.includes("Продакшн дээр зураг")) {
+      return { success: false, error: objectStorageRequiredMessage() };
+    }
     return { success: false, error: "Failed to upload file" };
   }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import styles from "../profile.module.css";
 
@@ -20,6 +21,7 @@ export function AvatarUpload({
   const [avatar, setAvatar] = useState<string | null>(serverUrl);
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const router = useRouter();
   const avatarKey = getAvatarKey(userId);
 
   useEffect(() => {
@@ -64,7 +66,7 @@ export function AvatarUpload({
       const fd = new FormData();
       fd.append("file", file);
       const res = await fetch("/api/profile/avatar", { method: "POST", body: fd });
-      const data = (await res.json()) as { ok?: boolean; url?: string };
+      const data = (await res.json()) as { ok?: boolean; url?: string; error?: string };
       if (res.ok && data.url) {
         setAvatar(data.url);
         try {
@@ -72,9 +74,20 @@ export function AvatarUpload({
         } catch {
           /* ignore */
         }
+        router.refresh();
+        return;
+      }
+      if (data.error) {
+        setAvatar(serverUrl);
+        try {
+          if (serverUrl) localStorage.setItem(avatarKey, serverUrl);
+          else localStorage.removeItem(avatarKey);
+        } catch {
+          /* ignore */
+        }
       }
     } catch {
-      /* offline / not logged in — local preview only */
+      setAvatar(serverUrl);
     }
   }
 
